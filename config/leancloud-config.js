@@ -27,4 +27,3 @@ const LEANCLOUD_CONFIG = isDevelopment ? DEV_CONFIG : PROD_CONFIG;
 // 导出配置到全局
 window.LeanCloudConfig = LEANCLOUD_CONFIG;
 
-console.log('LeanCloud配置已加载:', isDevelopment ? '开发环境' : '生产环境');

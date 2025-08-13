@@ -22,6 +22,12 @@
                 <span>Aili刷题系统</span>
             </div>
             <nav class="nav">
+                <!-- 科目类型按钮 - 仅在首页显示 -->
+                <button id="subject-selector-btn" class="nav-btn home-only">
+                
+                    科目:
+                    <span id="current-subject-text" style="font-size: 15px;">毛概</span>
+                </button>
                 <button id="home-btn" class="nav-btn">
                     <i class="fas fa-home"></i>
                     返回首页
@@ -195,6 +201,21 @@
             <div class="loading-icon">⚡</div>
             <div class="spinner spinner-rotate"></div>
             <div id="loading-text">正在处理...</div>
+        </div>
+    </div>
+
+    <!-- 题号选择模态框 -->
+    <div id="question-number-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>题目导航</h2>
+                <button id="close-question-number-modal" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="question-numbers-container" class="question-numbers-container">
+                    <!-- 题号将在这里动态生成 -->
+                </div>
+            </div>
         </div>
     </div>
 
@@ -930,6 +951,62 @@
                         页面即将自动刷新...
                     </p>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 科目选择模态框 -->
+    <div id="subject-selector-modal" class="modal hidden" data-required="true">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-book"></i> 选择学习科目</h2>
+                <button id="close-subject-selector" class="close-btn hidden">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="subject-selector-content">
+                    <p class="subject-description">
+                        请选择您要学习的科目类型，系统将根据您的选择提供相应的题目。
+                    </p>
+                    <div class="subject-options">
+                        <div class="subject-option" data-subject="毛概">
+                            <div class="subject-icon">🏛️</div>
+                            <div class="subject-info">
+                                <h3>毛概</h3>
+                                <p>毛泽东思想和中国特色社会主义理论体系概论</p>
+                                <span class="subject-count" id="maogai-count">-- 题</span>
+                            </div>
+                        </div>
+                        <div class="subject-option" data-subject="思修">
+                            <div class="subject-icon">💭</div>
+                            <div class="subject-info">
+                                <h3>思修</h3>
+                                <p>思想道德修养与法律基础</p>
+                                <span class="subject-count" id="sixiu-count">-- 题</span>
+                            </div>
+                        </div>
+                        <div class="subject-option" data-subject="近代史">
+                            <div class="subject-icon">📜</div>
+                            <div class="subject-info">
+                                <h3>近代史</h3>
+                                <p>中国近现代史纲要</p>
+                                <span class="subject-count" id="jindaishi-count">-- 题</span>
+                            </div>
+                        </div>
+                        <div class="subject-option" data-subject="马原">
+                            <div class="subject-icon">⚡</div>
+                            <div class="subject-info">
+                                <h3>马原</h3>
+                                <p>马克思主义基本原理</p>
+                                <span class="subject-count" id="mayuan-count">-- 题</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="confirm-subject-selection" class="primary-btn" disabled>
+                    <i class="fas fa-check"></i> 确认选择
+                </button>
             </div>
         </div>
     </div>

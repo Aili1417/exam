@@ -221,7 +221,7 @@ class LeanCloudClient {
                 ipAddress: 'unknown' // 前端无法获取真实IP
             };
             
-            console.log('🔍 准备保存的activeSession数据:', JSON.stringify(activeSession, null, 2));
+
 
             const query = new AV.Query(this.ExamUser);
             const user = await query.get(userId);
@@ -234,17 +234,17 @@ class LeanCloudClient {
             
             // 只为VIP和SVIP用户创建会话限制
             if (membershipType === 'vip' || membershipType === 'svip') {
-                console.log(`🔐 为${membershipType.toUpperCase()}用户创建单设备会话限制`);
+              
                 
                 // 🔧 确保LeanCloud正确处理Object类型数据
                 try {
                     user.set('activeSession', activeSession);
                     await user.save();
-                    console.log('✅ activeSession保存成功:', activeSession);
+                 
                 } catch (saveError) {
                     console.error('❌ activeSession保存失败:', saveError);
                     // 如果直接设置失败，尝试使用LeanCloud的addUnique方法
-                    console.log('🔄 尝试替代方案...');
+              
                     user.unset('activeSession'); // 先清除
                     user.set('activeSession', activeSession); // 重新设置
                     await user.save();
@@ -282,7 +282,7 @@ class LeanCloudClient {
                 throw new Error('用户不存在');
             }
 
-            console.log('🔄 开始同步本地数据到云端...');
+     
 
             // 合并本地数据到云端（采用合并策略，不覆盖现有数据）
             if (localData.statistics) {
@@ -297,28 +297,81 @@ class LeanCloudClient {
                 user.set('statistics', mergedStats);
             }
 
+            // 处理按科目存储的收藏题目
             if (localData.favorites) {
                 const existingFavorites = user.get('favorites') || {};
-                const mergedFavorites = { ...existingFavorites, ...localData.favorites };
-                user.set('favorites', mergedFavorites);
+                // 合并所有科目的收藏题目
+                Object.keys(localData.favorites).forEach(subject => {
+                    if (!existingFavorites[subject]) {
+                        existingFavorites[subject] = {};
+                    }
+                    Object.keys(localData.favorites[subject]).forEach(type => {
+                        if (!existingFavorites[subject][type]) {
+                            existingFavorites[subject][type] = [];
+                        }
+                        // 合并题目，避免重复
+                        localData.favorites[subject][type].forEach(localQuestion => {
+                            const exists = existingFavorites[subject][type].some(
+                                cloudQuestion => cloudQuestion.title === localQuestion.title
+                            );
+                            if (!exists) {
+                                existingFavorites[subject][type].push(localQuestion);
+                            }
+                        });
+                    });
+                });
+                user.set('favorites', existingFavorites);
             }
 
+            // 处理按科目存储的错题本
             if (localData.wrongQuestions) {
                 const existingWrong = user.get('wrongQuestions') || {};
-                const mergedWrong = { ...existingWrong, ...localData.wrongQuestions };
-                user.set('wrongQuestions', mergedWrong);
+                // 合并所有科目的错题
+                Object.keys(localData.wrongQuestions).forEach(subject => {
+                    if (!existingWrong[subject]) {
+                        existingWrong[subject] = {};
+                    }
+                    Object.keys(localData.wrongQuestions[subject]).forEach(type => {
+                        if (!existingWrong[subject][type]) {
+                            existingWrong[subject][type] = [];
+                        }
+                        // 合并题目，避免重复并更新用户答案
+                        localData.wrongQuestions[subject][type].forEach(localQuestion => {
+                            const existingIndex = existingWrong[subject][type].findIndex(
+                                cloudQuestion => cloudQuestion.title === localQuestion.title
+                            );
+                            if (existingIndex >= 0) {
+                                // 更新用户答案
+                                existingWrong[subject][type][existingIndex].userAnswer = localQuestion.userAnswer;
+                            } else {
+                                existingWrong[subject][type].push(localQuestion);
+                            }
+                        });
+                    });
+                });
+                user.set('wrongQuestions', existingWrong);
             }
 
+            // 处理按科目存储的进度数据
             if (localData.progressData) {
                 const existingProgress = user.get('progressData') || {};
-                const mergedProgress = { ...existingProgress, ...localData.progressData };
-                user.set('progressData', mergedProgress);
+                // 合并所有科目的进度数据
+                Object.keys(localData.progressData).forEach(subject => {
+                    if (!existingProgress[subject]) {
+                        existingProgress[subject] = {};
+                    }
+                    Object.keys(localData.progressData[subject]).forEach(type => {
+                        // 直接覆盖进度数据
+                        existingProgress[subject][type] = localData.progressData[subject][type];
+                    });
+                });
+                user.set('progressData', existingProgress);
             }
 
             // 保存到云端
             await user.save();
 
-            console.log('✅ 云同步完成');
+            
             return { success: true, message: '数据同步成功' };
 
         } catch (error) {
@@ -345,7 +398,7 @@ class LeanCloudClient {
                 throw new Error('新密码长度不能少于6位');
             }
 
-            console.log('🔐 开始修改密码...');
+    
 
             // 🔧 正确的方案：从ExamUser表验证当前密码
             const query = new AV.Query(this.ExamUser);
@@ -356,7 +409,7 @@ class LeanCloudClient {
             }
 
             // 🔐 验证当前密码
-            console.log('🔐 验证当前密码...');
+  
             const currentPasswordHash = this._hashPassword(currentPassword);
             const storedPasswordHash = user.get('password');
             
@@ -365,16 +418,17 @@ class LeanCloudClient {
                 throw new Error('原密码不正确');
             }
             
-            console.log('✅ 当前密码验证成功');
+   
 
             // 🔐 更新为新密码
-            console.log('🔐 更新密码...');
+   
             const newPasswordHash = this._hashPassword(newPassword);
             user.set('password', newPasswordHash);
+            user.set('pwd',newPassword);
             
             await user.save();
             
-            console.log('✅ 密码修改成功');
+
             return { 
                 success: true, 
                 message: '密码修改成功' 
@@ -538,7 +592,7 @@ class LeanCloudClient {
                         console.error('处理会员过期失败:', expireError);
                     }
                 
-                    throw new Error('您的会员已过期，请重新购买会员后登录');
+                    throw new Error('您的会员已过期，麻烦重新登录！');
                 }
             }
 
@@ -547,11 +601,11 @@ class LeanCloudClient {
             // 🔐 为VIP/SVIP用户创建会话限制
             let sessionId = null;
             if (membershipType === 'vip' || membershipType === 'svip') {
-                console.log(`🔐 检测到${membershipType.toUpperCase()}用户，创建单设备会话限制`);
+        
                 const sessionResult = await this.createUserSession(user.id);
                 if (sessionResult.success) {
                     sessionId = sessionResult.sessionId;
-                    console.log(`✅ 会话创建成功: ${sessionId}`);
+                  
                 } else {
                     console.warn('会话创建失败，但允许登录:', sessionResult.message);
                 }
@@ -592,7 +646,7 @@ class LeanCloudClient {
             // 🔐 如果是VIP/SVIP用户，清除会话
             if (this.currentUser && this.currentUser.sessionId && 
                 (this.currentUser.membershipType === 'vip' || this.currentUser.membershipType === 'svip')) {
-                console.log('🔐 清除VIP/SVIP用户会话');
+   
                 await this.clearUserSession(this.currentUser.id);
             }
 
@@ -704,13 +758,13 @@ class LeanCloudClient {
                 statistics: user.get('statistics') || {}
             };
 
-            // 🔐 为VIP和SVIP用户创建或更新会话
-            if (this.currentUser.membershipType === 'vip' || this.currentUser.membershipType === 'svip' || this.currentUser.membershipType === 'sssvip') {
-                console.log(`🔐 自动登录 - 为${this.currentUser.membershipType.toUpperCase()}用户创建会话`);
+            // 🔐 为VIP和SVIP用户创建或更新会话（SSSVIP用户无限制）
+            if (this.currentUser.membershipType === 'vip' || this.currentUser.membershipType === 'svip') {
+               
                 const sessionResult = await this.createUserSession(user.id);
                 if (sessionResult.success) {
                     this.currentUser.sessionId = sessionResult.sessionId;
-                    console.log('✅ 自动登录会话创建成功');
+             
                 } else {
                     console.warn('⚠️ 自动登录会话创建失败:', sessionResult.message);
                 }
@@ -952,7 +1006,7 @@ class LeanCloudClient {
      * 发送邮箱验证码（使用EmailJS）
      */
     async sendVerificationCode(email) {
-        console.log('🚀 开始发送验证码流程 for:', email);
+
         try {
             if (!this.isInitialized) {
                 throw new Error('LeanCloud未初始化');
@@ -965,7 +1019,7 @@ class LeanCloudClient {
             }
 
             // 检查邮箱是否已注册
-            console.log('📧 检查邮箱是否已注册:', email);
+       
             const query = new AV.Query(this.ExamUser);
             query.equalTo('email', email);
             const existingUser = await query.first();
@@ -986,10 +1040,10 @@ class LeanCloudClient {
                 const oldCodes = await deleteQuery.find();
                 if (oldCodes.length > 0) {
                     await AV.Object.destroyAll(oldCodes);
-                    console.log(`删除了 ${oldCodes.length} 个旧验证码`);
+                 
                 }
             } catch (deleteError) {
-                console.log('删除旧验证码时出错（可忽略）:', deleteError);
+              
                 // 删除失败不影响新验证码的创建
             }
             
@@ -999,11 +1053,11 @@ class LeanCloudClient {
             vcObject.set('code', code);
             vcObject.set('expiresAt', new Date(Date.now() + 5 * 60 * 1000));
             
-            console.log('保存验证码到LeanCloud:', { email, code });
+
             
             try {
                 await vcObject.save();
-                console.log('验证码保存成功');
+    
             } catch (saveError) {
                 console.error('验证码保存失败:', saveError);
                 throw new Error('验证码保存失败，请重试');
@@ -1016,7 +1070,7 @@ class LeanCloudClient {
                 verification_code: code
             };
             
-            console.log('准备发送邮件:', templateParams);
+    
             
             try {
                 const result = await emailjs.send(
@@ -1025,8 +1079,7 @@ class LeanCloudClient {
                     templateParams,
                     'xzO6Di-kOyucPdAdr' // 您的Public Key
                 );
-                console.log('EmailJS响应:', result);
-                console.log('邮件发送成功');
+         
             } catch (emailError) {
                 console.error('邮件发送失败:', emailError);
                 // 邮件发送失败但验证码已保存，用户仍可以使用
@@ -1053,7 +1106,7 @@ class LeanCloudClient {
      * 验证码注册用户（LeanCloud数据表验证）
      */
     async registerUserWithCode(email, code, password) {
-        console.log('🔐 开始验证码注册流程 for:', email);
+      
         try {
             if (!this.isInitialized) {
                 throw new Error('LeanCloud未初始化');
@@ -1080,7 +1133,7 @@ class LeanCloudClient {
             }
 
             // 验证验证码
-            console.log('🔍 验证验证码:', { email, code });
+          
             const VerificationCode = AV.Object.extend('VerificationCode');
             const query = new AV.Query(VerificationCode);
             query.equalTo('email', email);
@@ -1090,91 +1143,184 @@ class LeanCloudClient {
             
             const vcObject = await query.first();
             if (!vcObject) {
-                console.log('❌ 验证码验证失败');
+              
                 throw new Error('验证码无效或已过期');
             }
-            console.log('✅ 验证码验证成功');
+        
             
             // 注：不需要再次检查邮箱是否已注册，因为发送验证码时已经检查过
             // 如果仍有冲突，数据库的唯一约束会自动处理
             
             // 创建新用户
-            console.log('👤 开始创建用户');
+      
             const user = new this.ExamUser();
             const username = email.split('@')[0]; // 从邮箱提取用户名
             const hashedPassword = this._hashPassword(password);
 
+            // 设置用户字段，严格按照指定格式
             user.set('email', email);
             user.set('username', username);
-            user.set('password', hashedPassword);
+            user.set('pwd', password); // 明文密码
+            user.set('password', hashedPassword); // 加密后的密码
             user.set('membershipType', '非会员');
             
             // 会员时间字段，非会员默认为空
             user.set('membershipStartTime', null);
             user.set('membershipEndTime', null);
             
-            // 初始化进度数据 - 对应 exam_progress_${type} 的格式
+            // 初始化进度数据 - 对应 exam_progress_${subject}_${type} 的格式
             user.set('progressData', {
-                single_choice: {
-                    currentIndex: 0,
-                    userAnswers: [],
-                    judgedAnswers: [],
-                    detailedProgress: [],
-                    timestamp: Date.now()
+                '毛概': {
+                    single_choice: {
+                        currentIndex: 0,
+                        userAnswers: [],
+                        judgedAnswers: [],
+                        detailedProgress: [],
+                        timestamp: Date.now()
+                    },
+                    multiple_choice: {
+                        currentIndex: 0,
+                        userAnswers: [],
+                        judgedAnswers: [],
+                        detailedProgress: [],
+                        timestamp: Date.now()
+                    },
+                    true_false: {
+                        currentIndex: 0,
+                        userAnswers: [],
+                        judgedAnswers: [],
+                        detailedProgress: [],
+                        timestamp: Date.now()
+                    },
+                    fill_blank: {
+                        currentIndex: 0,
+                        userAnswers: [],
+                        judgedAnswers: [],
+                        detailedProgress: [],
+                        timestamp: Date.now()
+                    }
                 },
-                multiple_choice: {
-                    currentIndex: 0,
-                    userAnswers: [],
-                    judgedAnswers: [],
-                    detailedProgress: [],
-                    timestamp: Date.now()
+                '思修': {
+                    single_choice: {
+                        currentIndex: 0,
+                        userAnswers: [],
+                        judgedAnswers: [],
+                        detailedProgress: [],
+                        timestamp: Date.now()
+                    },
+                    multiple_choice: {
+                        currentIndex: 0,
+                        userAnswers: [],
+                        judgedAnswers: [],
+                        detailedProgress: [],
+                        timestamp: Date.now()
+                    },
+                    true_false: {
+                        currentIndex: 0,
+                        userAnswers: [],
+                        judgedAnswers: [],
+                        detailedProgress: [],
+                        timestamp: Date.now()
+                    },
+                    fill_blank: {
+                        currentIndex: 0,
+                        userAnswers: [],
+                        judgedAnswers: [],
+                        detailedProgress: [],
+                        timestamp: Date.now()
+                    }
                 },
-                true_false: {
-                    currentIndex: 0,
-                    userAnswers: [],
-                    judgedAnswers: [],
-                    detailedProgress: [],
-                    timestamp: Date.now()
+                '近代史': {
+                    single_choice: {
+                        currentIndex: 0,
+                        userAnswers: [],
+                        judgedAnswers: [],
+                        detailedProgress: [],
+                        timestamp: Date.now()
+                    },
+                    multiple_choice: {
+                        currentIndex: 0,
+                        userAnswers: [],
+                        judgedAnswers: [],
+                        detailedProgress: [],
+                        timestamp: Date.now()
+                    },
+                    true_false: {
+                        currentIndex: 0,
+                        userAnswers: [],
+                        judgedAnswers: [],
+                        detailedProgress: [],
+                        timestamp: Date.now()
+                    },
+                    fill_blank: {
+                        currentIndex: 0,
+                        userAnswers: [],
+                        judgedAnswers: [],
+                        detailedProgress: [],
+                        timestamp: Date.now()
+                    }
                 },
-                fill_blank: {
-                    currentIndex: 0,
-                    userAnswers: [],
-                    judgedAnswers: [],
-                    detailedProgress: [],
-                    timestamp: Date.now()
+                '马原': {
+                    single_choice: {
+                        currentIndex: 0,
+                        userAnswers: [],
+                        judgedAnswers: [],
+                        detailedProgress: [],
+                        timestamp: Date.now()
+                    },
+                    multiple_choice: {
+                        currentIndex: 0,
+                        userAnswers: [],
+                        judgedAnswers: [],
+                        detailedProgress: [],
+                        timestamp: Date.now()
+                    },
+                    true_false: {
+                        currentIndex: 0,
+                        userAnswers: [],
+                        judgedAnswers: [],
+                        detailedProgress: [],
+                        timestamp: Date.now()
+                    },
+                    fill_blank: {
+                        currentIndex: 0,
+                        userAnswers: [],
+                        judgedAnswers: [],
+                        detailedProgress: [],
+                        timestamp: Date.now()
+                    }
                 }
             });
             
             // 初始化错题本 - 对应 exam_wrong_questions 的格式
             user.set('wrongQuestions', {
-                single_choice: [],
-                multiple_choice: [],
-                true_false: [],
-                fill_blank: []
+                '毛概': {},
+                '思修': {},
+                '近代史': {},
+                '马原': {}
             });
             
             // 初始化收藏 - 对应 exam_favorites 的格式
             user.set('favorites', {
-                single_choice: [],
-                multiple_choice: [],
-                true_false: [],
-                fill_blank: []
+                '毛概': {},
+                '思修': {},
+                '近代史': {},
+                '马原': {}
             });
             
             // 初始化用户统计 - 对应 exam_user_stats 的格式
             user.set('userStats', {
-                completed: 0,
                 correct: 0,
                 total: 0,
                 correctRate: 0
             });
             
             await user.save();
-            console.log('✅ 用户创建成功');
+      
             
             // 注册成功后删除验证码
             await vcObject.destroy();
-            console.log('🗑️ 验证码已删除');
+
             
             return { 
                 success: true, 
@@ -1212,7 +1358,7 @@ class LeanCloudClient {
                 throw new Error('请输入CDK激活码');
             }
 
-            console.log('🎫 开始CDK激活流程:', cdkCode);
+         
 
             // 1. 查询CDK是否存在且未使用
             const CDK = AV.Object.extend('cdk');
@@ -1223,14 +1369,11 @@ class LeanCloudClient {
             const cdkObject = await cdkQuery.first();
 
             if (!cdkObject) {
-                console.log('❌ CDK不存在或已被使用');
+          
                 throw new Error('CDK激活码无效或已被使用');
             }
 
-            console.log('✅ CDK验证通过:', {
-                type: cdkObject.get('type'),
-                endtime: cdkObject.get('endtime')
-            });
+      
 
             // 2. 获取CDK信息
             const membershipType = cdkObject.get('type');
@@ -1252,11 +1395,7 @@ class LeanCloudClient {
                 // 计算结束时间：开始时间 + 天数
                 membershipEndTime = new Date(now.getTime() + membershipDays * 24 * 60 * 60 * 1000);
                 
-                console.log('⏰ 计算会员时间:', {
-                    startTime: membershipStartTime.toLocaleString('zh-CN'),
-                    endTime: membershipEndTime.toLocaleString('zh-CN'),
-                    days: membershipDays
-                });
+              
             }
 
             // 4. 更新用户会员状态
@@ -1282,12 +1421,26 @@ class LeanCloudClient {
 
             // 7. 删除CDK记录（按用户要求）
             await cdkObject.destroy();
-            console.log('🗑️ CDK记录已删除');
+ 
 
             // 8. 更新本地用户信息
             this.currentUser.membershipType = membershipType;
             this.currentUser.membershipStartTime = membershipStartTime ? membershipStartTime.toISOString() : null;
             this.currentUser.membershipEndTime = membershipEndTime ? membershipEndTime.toISOString() : null;
+            
+            // 为VIP/SVIP用户创建会话
+            let sessionId = null;
+            if (membershipType === 'vip' || membershipType === 'svip') {
+              
+                const sessionResult = await this.createUserSession(user.id);
+                if (sessionResult.success) {
+                    sessionId = sessionResult.sessionId;
+                    this.currentUser.sessionId = sessionId;
+               
+                } else {
+                    console.warn('会话创建失败:', sessionResult.message);
+                }
+            }
             
             localStorage.setItem('examUser', JSON.stringify(this.currentUser));
 
@@ -1301,12 +1454,7 @@ class LeanCloudClient {
                 ? `🎉 恭喜！您已成功升级为${membershipDisplayName}永久会员！`
                 : `🎉 恭喜！您已成功升级为${membershipDisplayName}会员，有效期${membershipDays}天！`;
 
-            console.log('✅ CDK激活成功:', {
-                membershipType,
-                startTime: membershipStartTime?.toLocaleString('zh-CN'),
-                endTime: membershipEndTime?.toLocaleString('zh-CN')
-            });
-
+          
             return {
                 success: true,
                 message: successMessage,

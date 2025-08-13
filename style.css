@@ -4191,3 +4191,245 @@ body {
     }
 }
 
+/* 题号选择模态框样式 */
+#question-number-modal .modal-content {
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+#question-number-modal .modal-body {
+    flex: 1;
+    overflow: hidden;
+    padding: 0;
+    min-height: 0; /* 确保flex子元素可以收缩 */
+}
+
+.question-numbers-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+    gap: 10px;
+    max-height: 60vh; /* 设置最大高度 */
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(59, 130, 246, 0.5) rgba(0, 0, 0, 0.1);
+}
+
+/* 自定义滚动条样式 - Webkit浏览器 */
+.question-numbers-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.question-numbers-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+
+.question-numbers-container::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.5);
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+.question-numbers-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.7);
+}
+
+.question-number-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 2px solid #e2e8f0;
+    background: white;
+    color: #4a5568;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.question-number-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.question-number-btn.correct {
+    background: #4ade80;
+    color: white;
+    border-color: #4ade80;
+}
+
+.question-number-btn.wrong {
+    background: #f87171;
+    color: white;
+    border-color: #f87171;
+}
+
+.question-number-btn.current {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+.question-number-btn.answered {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+/* 底部状态栏进度显示样式 */
+#current-progress {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+    text-decoration: none;
+    color: inherit;
+}
+
+#current-progress:hover {
+    opacity: 0.8;
+    text-decoration: none;
+    color: inherit;
+}
+
+/* 科目选择模态框样式 */
+.subject-selector-content {
+    padding: 20px 0;
+}
+
+.subject-description {
+    text-align: center;
+    color: #6b7280;
+    margin-bottom: 30px;
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+.subject-options {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+    max-height: 50vh;
+    overflow-y: auto;
+    padding: 10px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.subject-options::-webkit-scrollbar {
+    display: none;
+}
+
+.subject-option {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #f9fafb;
+}
+
+.subject-option:hover {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.subject-option.selected {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.subject-icon {
+    font-size: 32px;
+    min-width: 50px;
+    text-align: center;
+}
+
+.subject-info {
+    flex: 1;
+}
+
+.subject-info h3 {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.subject-info p {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: #6b7280;
+    line-height: 1.4;
+}
+
+.subject-count {
+    display: inline-block;
+    background: #3b82f6;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.subject-option.selected .subject-count {
+    background: #1d4ed8;
+}
+
+/* 科目按钮样式 */
+#subject-selector-btn {
+    background: rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+#subject-selector-btn:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+#current-subject-text {
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .subject-options {
+        grid-template-columns: 1fr;
+    }
+    
+    .subject-option {
+        padding: 15px;
+        gap: 15px;
+    }
+    
+    .subject-icon {
+        font-size: 24px;
+        min-width: 40px;
+    }
+    
+    .subject-info h3 {
+        font-size: 16px;
+    }
+    
+    .subject-info p {
+        font-size: 13px;
+    }
+    
+    #current-subject-text {
+        font-size: 12px;
+    }
+}
+
