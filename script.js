@@ -372,7 +372,7 @@ function initEventListeners() {
 
     // 点击模态框外部关闭
     // 交卷相关事件
-    document.getElementById('submit-exam-btn').addEventListener('click', showSubmitConfirmModal);
+   
     // 注意：nav-submit-exam-btn 的事件监听器在 updateExamNavigation 中动态绑定
     document.getElementById('cancel-submit').addEventListener('click', hideSubmitConfirmModal);
     document.getElementById('confirm-submit').addEventListener('click', submitExam);
@@ -1417,7 +1417,7 @@ function showQuestion() {
     }
 
     // 更新按钮状态
-    updateNavigationButtons();
+
     updateFavoriteButton();
     
     // 更新进度显示
@@ -1464,7 +1464,7 @@ function showOptions(question, questionType) {
                     // 考试模式下自动跳到下一题但不评分
                     setTimeout(() => {
                         autoNextQuestion();
-                    }, 300);
+                    }, 1000);
                 } else {
                     // 练习模式下自动评题
                     setTimeout(() => {
@@ -1519,7 +1519,7 @@ function showTrueFalseOptions(question) {
                 // 考试模式下自动跳到下一题但不评分
                 setTimeout(() => {
                     autoNextQuestion();
-                }, 300);
+                }, 1000);
             } else {
                 // 练习模式下自动评题
                 setTimeout(() => {
@@ -1579,6 +1579,21 @@ function submitAnswer() {
     if (isExamMode) {
         // 考试模式下只保存答案，不评判
         showMessage('答案已提交', 'success');
+		 // 直接跳转到下一题
+    if (currentQuestionIndex < currentQuestions.length - 1) {
+        currentQuestionIndex++;
+        showQuestion();
+    } else {
+        // 已经是最后一题，提示可以交卷
+        if (isExamMode) {
+        showMessage('已完成所有题目，可以点击交卷按钮提交考试', 'info');
+        } else {
+            showMessage('恭喜！您已完成所有题目', 'success');
+            setTimeout(() => {
+                returnToHome();
+            }, 2000);
+        }
+    }
         // 保存进度但不评判
         saveProgress();
     } else {
@@ -1677,7 +1692,7 @@ function processAnswer() {
         // 正常情况下，答对了延迟自动跳转到下一题
         setTimeout(() => {
             goToNextQuestion();
-        }, 1500);
+        }, 1000);
     } else {
         // 如果答错了，滚动到解析区域
         setTimeout(() => {
@@ -1982,47 +1997,7 @@ function updateFavoriteButton() {
     }
 }
 
-// 更新导航按钮状态
-function updateNavigationButtons() {
-    document.getElementById('prev-btn').disabled = currentQuestionIndex === 0;
-    document.getElementById('next-btn').disabled = currentQuestionIndex === currentQuestions.length - 1;
-    
-    const submitBtn = document.getElementById('submit-btn');
-    const questionType = isExamMode ? currentQuestions[currentQuestionIndex]._type : currentQuestionType;
-    
-    const submitExamBtn = document.getElementById('submit-exam-btn');
-    
-    if (isReviewMode) {
-        // 查看详情模式下显示已提交状态，隐藏交卷按钮
-        submitExamBtn.classList.add('hidden');
-        submitBtn.style.display = 'block';
-        submitBtn.disabled = true;
-        submitBtn.textContent = '已提交';
-    } else if (isExamMode) {
-        // 考试模式下显示提交答案按钮和交卷按钮
-        submitExamBtn.classList.remove('hidden');
-        submitBtn.style.display = 'block';
-        submitBtn.disabled = false;
-        submitBtn.textContent = '提交答案';
-    } else {
-        // 练习模式下隐藏交卷按钮
-        submitExamBtn.classList.add('hidden');
-        
-        // 单选题和判断题在已评判后隐藏提交按钮，多选题和填空题显示为已提交状态
-        if (judgedAnswers[currentQuestionIndex]) {
-            if (questionType === 'single_choice' || questionType === 'true_false') {
-                submitBtn.style.display = 'none';
-            } else {
-                submitBtn.disabled = true;
-                submitBtn.textContent = '已提交';
-            }
-        } else {
-            submitBtn.style.display = 'block';
-            submitBtn.disabled = false;
-            submitBtn.textContent = '提交答案';
-        }
-    }
-}
+
 
 // 显示考试结果
 function showExamResult() {
@@ -2035,6 +2010,8 @@ function returnToHome() {
     document.getElementById('question-section').classList.add('hidden');
     document.getElementById('welcome-section').classList.remove('hidden');
     document.getElementById('question-type-section').classList.remove('hidden');
+//    提交按钮可用
+    document.getElementById('submit-btn').disabled = false;
     
     // 显示科目按钮（返回首页）
     showSubjectButton();
@@ -3126,6 +3103,11 @@ function reviewExamDetails() {
     
     // 进入查看详情模式
     isReviewMode = true;
+    // 提交按钮不可用
+    document.getElementById('submit-btn').disabled = true;
+   
+
+    
     
     // 标记所有题目为已评判状态以显示正确答案
     for (let i = 0; i < currentQuestions.length; i++) {
@@ -4252,8 +4234,7 @@ async function performLogout(isForced = false) {
 // 初始化密码切换功能
 function initPasswordToggle() {
     document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('toggle-password-btn') || 
-            e.target.parentElement.classList.contains('toggle-password-btn')) {
+        if (e.target.classList.contains('toggle-password-btn')) {
             
             const btn = e.target.classList.contains('toggle-password-btn') ? e.target : e.target.parentElement;
             const targetId = btn.getAttribute('data-target');
