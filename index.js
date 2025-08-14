@@ -3,6 +3,9 @@
 // 当前版本号 - 更新此值以触发会话清理
 const CURRENT_VERSION = "1.85.521";
 
+// 会话标记键名
+const SESSION_REDIRECT_KEY = "version_check_redirect_handled";
+
 /**
  * 检查本地存储的版本号与当前版本号是否一致
  * @returns {boolean} 版本号是否一致
@@ -109,15 +112,18 @@ function clearAllSessions() {
                 const finalVerify = localStorage.getItem('appVersion');
                 console.log('最终验证版本号:', finalVerify);
                 
-                // 跳转到主页，并添加参数避免再次版本检查
+                // 清除会话标记
+                sessionStorage.removeItem(SESSION_REDIRECT_KEY);
+                
+                // 跳转到主页
                 console.log('跳转到index.html');
-                window.location.href = './index.html?skipVersionCheck=true';
+                window.location.href = './index.html';
             });
         }, 2000);
     } catch (error) {
         console.error('清理会话过程中发生错误:', error);
         // 即使发生错误，也跳转到主页
-        window.location.href = './index.html?skipVersionCheck=true';
+        window.location.href = './index.html';
     }
 }
 
@@ -156,26 +162,26 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 只有在非begin.html页面才检查版本号
     if (!isBeginPage) {
-        // 检查URL参数，避免循环重定向
-        const urlParams = new URLSearchParams(window.location.search);
-        const skipVersionCheck = urlParams.get('skipVersionCheck') === 'true';
-        
-        console.log('跳过版本检查参数:', skipVersionCheck);
-        
-        if (!skipVersionCheck) {
-            // 延迟一点执行版本检查，确保页面完全加载
-            setTimeout(() => {
-                const isVersionMatch = checkVersion();
-                console.log('版本匹配结果:', isVersionMatch);
-                if (!isVersionMatch) {
-                    // 版本号不一致，跳转到begin.html
-                    console.log('版本不匹配，跳转到begin.html');
-                    window.location.href = './begin.html';
-                }
-            }, 100);
-        } else {
-            console.log('跳过版本检查');
+        // 检查会话标记，避免循环重定向
+        const redirectHandled = sessionStorage.getItem(SESSION_REDIRECT_KEY) === 'true';
+        if (redirectHandled) {
+            console.log('重定向已处理，跳过版本检查');
+            sessionStorage.removeItem(SESSION_REDIRECT_KEY);
+            return;
         }
+        
+        // 延迟一点执行版本检查，确保页面完全加载
+        setTimeout(() => {
+            const isVersionMatch = checkVersion();
+            console.log('版本匹配结果:', isVersionMatch);
+            if (!isVersionMatch) {
+                // 版本号不一致，跳转到begin.html
+                console.log('版本不匹配，跳转到begin.html');
+                // 设置会话标记
+                sessionStorage.setItem(SESSION_REDIRECT_KEY, 'true');
+                window.location.href = './begin.html';
+            }
+        }, 100);
     }
 });
 
