@@ -12,6 +12,12 @@ function checkVersion() {
         // 获取本地存储的版本号
         const localVersion = localStorage.getItem('appVersion');
         
+        console.log('版本检查:', {
+            current: CURRENT_VERSION,
+            local: localVersion,
+            match: localVersion === CURRENT_VERSION
+        });
+        
         // 比较版本号
         const isMatch = localVersion === CURRENT_VERSION;
 
@@ -29,6 +35,8 @@ function checkVersion() {
  */
 function clearAllSessions() {
     try {
+        console.log('开始清理会话...');
+        
         // 显示状态消息的函数
         function showStatus(message, isError = false) {
             const statusElement = document.getElementById('status');
@@ -58,13 +66,54 @@ function clearAllSessions() {
         
         // 保存当前版本号到本地存储
         localStorage.setItem('appVersion', CURRENT_VERSION);
+        console.log('版本号已设置为:', CURRENT_VERSION);
+        
+        // 验证版本号是否正确设置
+        const verifyVersion = localStorage.getItem('appVersion');
+        console.log('验证版本号:', verifyVersion);
+        
         showStatus(`会话已清理，版本号已更新为: ${CURRENT_VERSION},请耐心等待...`);
         
-        // 延迟一下让用户看到状态信息
+        // 使用更可靠的方式确保localStorage被正确持久化
+        function waitForStoragePersistence(callback) {
+            // 立即检查一次
+            const immediateCheck = localStorage.getItem('appVersion');
+            if (immediateCheck === CURRENT_VERSION) {
+                callback();
+                return;
+            }
+            
+            // 如果立即检查失败，使用短轮询
+            let attempts = 0;
+            const maxAttempts = 10;
+            const interval = setInterval(() => {
+                attempts++;
+                const check = localStorage.getItem('appVersion');
+                console.log(`存储验证尝试 ${attempts}:`, check);
+                
+                if (check === CURRENT_VERSION) {
+                    clearInterval(interval);
+                    callback();
+                } else if (attempts >= maxAttempts) {
+                    clearInterval(interval);
+                    console.warn('存储验证超时，继续执行跳转');
+                    callback();
+                }
+            }, 100);
+        }
+        
+        // 延迟一下让用户看到状态信息，然后确保存储已持久化后再跳转
         setTimeout(() => {
-            // 跳转到主页，并添加参数避免再次版本检查
-            window.location.href = 'index.html?skipVersionCheck=true';
-        }, 100);
+            waitForStoragePersistence(() => {
+                // 再次验证版本号
+                const finalVerify = localStorage.getItem('appVersion');
+                console.log('最终验证版本号:', finalVerify);
+                
+                // 跳转到主页，并添加参数避免再次版本检查
+                console.log('跳转到index.html');
+                window.location.href = 'index.html?skipVersionCheck=true';
+            });
+        }, 2000);
     } catch (error) {
         console.error('清理会话过程中发生错误:', error);
         // 即使发生错误，也跳转到主页
@@ -85,33 +134,56 @@ function initBeginPage() {
 
 // 页面加载时检查版本号
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('页面加载检查:', {
+        href: window.location.href,
+        pathname: window.location.pathname,
+        search: window.location.search
+    });
+    
     // 如果在begin.html页面，初始化清理功能
-    if (window.location.pathname.includes('begin.html')) {
+    const pathname = window.location.pathname.toLowerCase();
+    const href = window.location.href.toLowerCase();
+    const isBeginPage = pathname.includes('begin.html') || 
+                       pathname.endsWith('/begin.html') || 
+                       pathname === '/begin.html' ||
+                       href.includes('begin.html');
+    
+    if (isBeginPage) {
+        console.log('在begin.html页面，初始化清理功能');
         initBeginPage();
         return;
     }
     
     // 只有在非begin.html页面才检查版本号
-    if (!window.location.pathname.includes('begin.html')) {
+    if (!isBeginPage) {
         // 检查URL参数，避免循环重定向
         const urlParams = new URLSearchParams(window.location.search);
         const skipVersionCheck = urlParams.get('skipVersionCheck') === 'true';
+        
+        console.log('跳过版本检查参数:', skipVersionCheck);
         
         if (!skipVersionCheck) {
             // 延迟一点执行版本检查，确保页面完全加载
             setTimeout(() => {
                 const isVersionMatch = checkVersion();
+                console.log('版本匹配结果:', isVersionMatch);
                 if (!isVersionMatch) {
                     // 版本号不一致，跳转到begin.html
+                    console.log('版本不匹配，跳转到begin.html');
                     window.location.href = 'begin.html';
                 }
             }, 100);
+        } else {
+            console.log('跳过版本检查');
         }
     }
 });
 
 // 为了确保在begin.html页面能正确绑定事件，也直接执行一次检查
-if (window.location.pathname.includes('begin.html')) {
+const currentPathname = window.location.pathname.toLowerCase();
+const isBeginPageDirect = currentPathname.includes('begin.html') || currentPathname.endsWith('/begin.html') || currentPathname === '/begin.html';
+
+if (isBeginPageDirect) {
     // 如果DOM已经加载完成，直接初始化
     if (document.readyState === 'loading') {
         // DOM仍在加载中，等待DOMContentLoaded
