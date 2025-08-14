@@ -62,13 +62,13 @@ function clearAllSessions() {
         
         // 延迟一下让用户看到状态信息
         setTimeout(() => {
-            // 跳转到主页
-            window.location.href = 'index.html';
+            // 跳转到主页，并添加参数避免再次版本检查
+            window.location.href = 'index.html?skipVersionCheck=true';
         }, 100);
     } catch (error) {
         console.error('清理会话过程中发生错误:', error);
         // 即使发生错误，也跳转到主页
-        window.location.href = 'index.html';
+        window.location.href = 'index.html?skipVersionCheck=true';
     }
 }
 
@@ -93,14 +93,20 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 只有在非begin.html页面才检查版本号
     if (!window.location.pathname.includes('begin.html')) {
-        // 延迟一点执行版本检查，确保页面完全加载
-        setTimeout(() => {
-            const isVersionMatch = checkVersion();
-            if (!isVersionMatch) {
-                // 版本号不一致，跳转到begin.html
-                window.location.href = 'begin.html';
-            }
-        }, 100);
+        // 检查URL参数，避免循环重定向
+        const urlParams = new URLSearchParams(window.location.search);
+        const skipVersionCheck = urlParams.get('skipVersionCheck') === 'true';
+        
+        if (!skipVersionCheck) {
+            // 延迟一点执行版本检查，确保页面完全加载
+            setTimeout(() => {
+                const isVersionMatch = checkVersion();
+                if (!isVersionMatch) {
+                    // 版本号不一致，跳转到begin.html
+                    window.location.href = 'begin.html';
+                }
+            }, 100);
+        }
     }
 });
 
