@@ -22,15 +22,11 @@ function checkVersion() {
         // 获取本地存储的版本号
         const localVersion = localStorage.getItem('appVersion');
         
-        console.log('版本检查:', {
-            current: CURRENT_VERSION,
-            local: localVersion,
-            match: localVersion === CURRENT_VERSION
-        });
+ 
         
         // 如果没有本地版本号，认为是新用户，设置一个错误的版本号强制更新
         if (!localVersion) {
-            console.log('新用户，设置初始错误版本号');
+    
             localStorage.setItem('appVersion', '0.0.0');
             return false; // 强制跳转到更新页面
         }
@@ -109,7 +105,6 @@ function clearAllSessions() {
             const interval = setInterval(() => {
                 attempts++;
                 const check = localStorage.getItem('appVersion');
-                console.log(`存储验证尝试 ${attempts}:`, check);
                 
                 if (check === CURRENT_VERSION) {
                     clearInterval(interval);
@@ -133,7 +128,7 @@ function clearAllSessions() {
                 console.log('跳转到index.html');
                 window.location.href = './index.html';
             });
-        }, 2000);
+        }, 1000);
     } catch (error) {
         console.error('清理会话过程中发生错误:', error);
         // 即使发生错误，也跳转到主页
@@ -226,7 +221,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('版本匹配结果:', isVersionMatch);
         if (!isVersionMatch) {
             // 版本号不一致，跳转到begin.html
-            console.log('版本不匹配，跳转到begin.html');
+        
             window.location.href = './begin.html';
         } else {
             // 版本匹配，重置计数器（仅在服务器环境下）
