@@ -3,6 +3,16 @@
 // 当前版本号 - 更新此值以触发会话清理
 const CURRENT_VERSION = "1.85.521";
 
+// 重定向计数器，防止无限循环
+const REDIRECT_COUNT_KEY = "version_check_redirect_count";
+const MAX_REDIRECTS = 3;
+
+// 检查是否在服务器环境运行
+function isServerEnvironment() {
+    // 检查协议是否为http或https（而不是file）
+    return window.location.protocol === 'http:' || window.location.protocol === 'https:';
+}
+
 /**
  * 检查本地存储的版本号与当前版本号是否一致
  * @returns {boolean} 版本号是否一致
@@ -17,6 +27,13 @@ function checkVersion() {
             local: localVersion,
             match: localVersion === CURRENT_VERSION
         });
+        
+        // 如果没有本地版本号，认为是新用户，设置初始版本号并返回true
+        if (!localVersion) {
+            console.log('新用户，设置初始版本号');
+            localStorage.setItem('appVersion', CURRENT_VERSION);
+            return true;
+        }
         
         // 比较版本号
         const isMatch = localVersion === CURRENT_VERSION;
@@ -73,6 +90,9 @@ function clearAllSessions() {
         console.log('验证版本号:', verifyVersion);
         
         showStatus(`会话已清理，版本号已更新为: ${CURRENT_VERSION},请耐心等待...`);
+        
+        // 重置重定向计数器
+        sessionStorage.removeItem(REDIRECT_COUNT_KEY);
         
         // 使用更可靠的方式确保localStorage被正确持久化
         function waitForStoragePersistence(callback) {
@@ -156,9 +176,63 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 只有在非begin.html页面才检查版本号
     if (!isBeginPage) {
-        // 完全移除版本检查逻辑以避免服务器环境下的循环重定向问题
-        console.log('版本检查已禁用');
-        return;
+        // 在服务器环境下增加额外的安全检查
+        if (isServerEnvironment()) {
+            // 检查重定向计数，防止无限循环
+            let redirectCount = parseInt(sessionStorage.getItem(REDIRECT_COUNT_KEY) || '0');
+            redirectCount++;
+            sessionStorage.setItem(REDIRECT_COUNT_KEY, redirectCount.toString());
+            
+            console.log('重定向计数 (服务器环境):', redirectCount);
+            
+            // 如果重定向次数超过限制，停止检查并显示错误
+            if (redirectCount > MAX_REDIRECTS) {
+                console.error('检测到可能的重定向循环，停止版本检查');
+                sessionStorage.removeItem(REDIRECT_COUNT_KEY);
+                
+                // 显示错误信息给用户
+                const container = document.querySelector('.container') || document.body;
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    background: #f8d7da;
+                    color: #721c24;
+                    padding: 15px;
+                    text-align: center;
+                    z-index: 9999;
+                    border: 1px solid #f5c6cb;
+                `;
+                errorDiv.innerHTML = `
+                    <strong>检测到页面重定向问题</strong><br>
+                    请尝试以下操作：<br>
+                    1. 清除浏览器缓存和Cookie<br>
+                    2. 使用无痕/隐私模式访问<br>
+                    3. 联系网站管理员
+                `;
+                container.insertBefore(errorDiv, container.firstChild);
+                
+                return;
+            }
+        }
+        
+        // 延迟一点执行版本检查，确保页面完全加载
+        setTimeout(() => {
+            const isVersionMatch = checkVersion();
+            console.log('版本匹配结果:', isVersionMatch);
+            if (!isVersionMatch) {
+                // 版本号不一致，跳转到begin.html
+                console.log('版本不匹配，跳转到begin.html');
+                window.location.href = './begin.html';
+            } else {
+                // 版本匹配，重置计数器（仅在服务器环境下）
+                if (isServerEnvironment()) {
+                    sessionStorage.removeItem(REDIRECT_COUNT_KEY);
+                }
+            }
+        }, 100);
     }
 });
 
