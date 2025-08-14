@@ -218,21 +218,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // 延迟一点执行版本检查，确保页面完全加载
-        setTimeout(() => {
-            const isVersionMatch = checkVersion();
-            console.log('版本匹配结果:', isVersionMatch);
-            if (!isVersionMatch) {
-                // 版本号不一致，跳转到begin.html
-                console.log('版本不匹配，跳转到begin.html');
-                window.location.href = './begin.html';
-            } else {
-                // 版本匹配，重置计数器（仅在服务器环境下）
-                if (isServerEnvironment()) {
-                    sessionStorage.removeItem(REDIRECT_COUNT_KEY);
-                }
+        // 立即执行版本检查，确保页面完全加载前完成
+        const isVersionMatch = checkVersion();
+        console.log('版本匹配结果:', isVersionMatch);
+        if (!isVersionMatch) {
+            // 版本号不一致，跳转到begin.html
+            console.log('版本不匹配，跳转到begin.html');
+            window.location.href = './begin.html';
+        } else {
+            // 版本匹配，重置计数器（仅在服务器环境下）
+            if (isServerEnvironment()) {
+                sessionStorage.removeItem(REDIRECT_COUNT_KEY);
             }
-        }, 100);
+        }
     }
 });
 
