@@ -1450,6 +1450,8 @@ function showOptions(question, questionType) {
             if (isReviewMode) return;
             // 只有在练习模式下已评判的题目才不能修改
             if (judgedAnswers[currentQuestionIndex] && !isExamMode) return;
+            // 防止多次点击触发多次跳转
+            if (questionType === 'single_choice' && judgedAnswers[currentQuestionIndex] && isExamMode) return;
 
             if (questionType === 'single_choice') {
                 // 单选题：清除其他选项选中状态
@@ -1462,11 +1464,19 @@ function showOptions(question, questionType) {
                 // 单选题选择后的处理
                 if (isExamMode) {
                     // 考试模式下自动跳到下一题但不评分
+                    // 禁用选项点击防止多次触发
+                    container.querySelectorAll('.option').forEach(opt => {
+                        opt.style.pointerEvents = 'none';
+                    });
                     setTimeout(() => {
                         autoNextQuestion();
                     }, 1000);
                 } else {
                     // 练习模式下自动评题
+                    // 禁用选项点击防止多次触发
+                    container.querySelectorAll('.option').forEach(opt => {
+                        opt.style.pointerEvents = 'none';
+                    });
                     setTimeout(() => {
                         autoSubmitAnswer();
                     }, 300);
@@ -1507,6 +1517,8 @@ function showTrueFalseOptions(question) {
             if (isReviewMode) return;
             // 只有在练习模式下已评判的题目才不能修改
             if (judgedAnswers[currentQuestionIndex] && !isExamMode) return;
+            // 防止多次点击触发多次跳转
+            if (judgedAnswers[currentQuestionIndex] && isExamMode) return;
 
             container.querySelectorAll('.option').forEach(opt => {
                 opt.classList.remove('selected');
@@ -1517,11 +1529,19 @@ function showTrueFalseOptions(question) {
             // 判断题选择后的处理
             if (isExamMode) {
                 // 考试模式下自动跳到下一题但不评分
+                // 禁用选项点击防止多次触发
+                container.querySelectorAll('.option').forEach(opt => {
+                    opt.style.pointerEvents = 'none';
+                });
                 setTimeout(() => {
                     autoNextQuestion();
                 }, 1000);
             } else {
                 // 练习模式下自动评题
+                // 禁用选项点击防止多次触发
+                container.querySelectorAll('.option').forEach(opt => {
+                    opt.style.pointerEvents = 'none';
+                });
                 setTimeout(() => {
                     autoSubmitAnswer();
                 }, 300);
@@ -1666,11 +1686,13 @@ function processAnswer() {
     // 更新选项样式
     updateOptionStyles(isCorrect, correctAnswer);
     
-    // 处理错题本
-    if (!isCorrect) {
-        addToWrongQuestions(questionType, question, userAnswer);
-    } else {
-        removeFromWrongQuestions(questionType, question);
+    // 处理错题本 - 只在模拟考试模式下记录错题
+    if (isExamMode) {
+        if (!isCorrect) {
+            addToWrongQuestions(questionType, question, userAnswer);
+        } else {
+            removeFromWrongQuestions(questionType, question);
+        }
     }
     
     // 保存进度
@@ -1815,7 +1837,8 @@ function goToNextQuestion() {
     } else {
         // 已经是最后一题
         if (isExamMode) {
-            showExamResult();
+            // 在考试模式下，显示交卷确认模态框而不是直接提交
+            showSubmitConfirmModal();
         } else {
             showMessage('恭喜！您已完成所有题目', 'success');
             setTimeout(() => {
@@ -2543,6 +2566,178 @@ function showMessage(message, type = 'info', duration = 3000) {
     }, duration);
 }
 
+// 出题记录管理器
+const ExamQuestionHistory = {
+    // 获取当前科目的出题记录
+    getHistory(subject, questionType) {
+        const key = `exam_question_history_${subject}_${questionType}`;
+        const history = localStorage.getItem(key);
+        return history ? JSON.parse(history) : {
+            correctQuestions: [], // 作对的题目ID列表
+            totalGenerated: 0     // 总出题数
+        };
+    },
+    
+    // 添加作对的题目到历史记录
+    addCorrectQuestion(subject, questionType, questionId) {
+        const history = this.getHistory(subject, questionType);
+        // 添加到列表开头
+        history.correctQuestions.unshift(questionId);
+        // 只保留最近的记录（避免存储膨胀）
+        if (history.correctQuestions.length > 50) {
+            history.correctQuestions = history.correctQuestions.slice(0, 50);
+        }
+        history.totalGenerated++;
+        this.saveHistory(subject, questionType, history);
+    },
+    
+    // 保存历史记录
+    saveHistory(subject, questionType, history) {
+        const key = `exam_question_history_${subject}_${questionType}`;
+        localStorage.setItem(key, JSON.stringify(history));
+    },
+    
+    // 检查题目是否在近期作对过
+    wasRecentlyCorrect(subject, questionType, questionId) {
+        const history = this.getHistory(subject, questionType);
+        return history.correctQuestions.includes(questionId);
+    },
+    
+    // 清理指定科目和题型的历史记录
+    clearHistory(subject, questionType) {
+        const key = `exam_question_history_${subject}_${questionType}`;
+        localStorage.removeItem(key);
+    }
+};
+
+// 清理所有科目的考试记录会话
+function clearAllExamQuestionHistory() {
+    // 清理所有以exam_question_history_开头的localStorage项
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('exam_question_history_')) {
+            keysToRemove.push(key);
+        }
+    }
+    
+    keysToRemove.forEach(key => {
+        localStorage.removeItem(key);
+    });
+}
+
+// 基于优先级的智能抽题算法
+function smartSelectQuestions(subject, questionType, requestedCount) {
+    // 获取当前科目的数据
+    const subjectKey = subject || currentSubject || '毛概';
+    
+    // 获取题目数据
+    const allQuestions = questionsData[questionType] || [];
+    if (allQuestions.length === 0) return [];
+    
+    // 获取错题本和收藏数据
+    const wrongQuestionsData = (wrongQuestions[subjectKey] && wrongQuestions[subjectKey][questionType]) || [];
+    const favoritesData = (favorites[subjectKey] && favorites[subjectKey][questionType]) || [];
+    
+    // 获取出题历史
+    const history = ExamQuestionHistory.getHistory(subjectKey, questionType);
+    
+    // 创建题目分类映射
+    const wrongQuestionMap = new Map();
+    const favoriteQuestionMap = new Map();
+    
+    // 建立映射关系（通过title识别题目）
+    wrongQuestionsData.forEach(q => wrongQuestionMap.set(q.title, q));
+    favoritesData.forEach(q => favoriteQuestionMap.set(q.title, q));
+    
+    // 分类题目并标记来源
+    const wrongQuestionsList = wrongQuestionsData.map(q => ({...q, source: 'wrong'}));
+    const favoritesList = favoritesData
+        .filter(q => !wrongQuestionMap.has(q.title)) // 排除已在错题本中的题目
+        .map(q => ({...q, source: 'favorite'}));
+    const normalQuestionsList = allQuestions
+        .filter(q => !wrongQuestionMap.has(q.title) && !favoriteQuestionMap.has(q.title)) // 排除已在错题本和收藏中的题目
+        .map(q => ({...q, source: 'normal'}));
+    
+    // 过滤掉近期作对的题目
+    const filterRecentCorrect = (questions) => {
+        return questions.filter(q => !ExamQuestionHistory.wasRecentlyCorrect(subjectKey, questionType, q.title));
+    };
+    
+    const filteredWrong = filterRecentCorrect(wrongQuestionsList);
+    const filteredFavorites = filterRecentCorrect(favoritesList);
+    const filteredNormal = filterRecentCorrect(normalQuestionsList);
+    
+    // 计算总体权重
+    const totalWrong = filteredWrong.length;
+    const totalFavorites = filteredFavorites.length;
+    const totalNormal = filteredNormal.length;
+    const totalAvailable = totalWrong + totalFavorites + totalNormal;
+    
+    if (totalAvailable === 0) {
+        // 如果没有可用题目，返回原始题目中的随机选择
+        return shuffleArray([...allQuestions]).slice(0, requestedCount).map(q => ({...q, _type: questionType}));
+    }
+    
+    // 按优先级分配抽取概率
+    // 错题本:收藏:题库 = 50%:30%:20%
+    const wrongWeight = 0.5;
+    const favoriteWeight = 0.3;
+    const normalWeight = 0.2;
+    
+    const selectedQuestions = [];
+    const usedTitles = new Set();
+    
+    // 抽取题目
+    for (let i = 0; i < requestedCount; i++) {
+        if (selectedQuestions.length >= totalAvailable) break;
+        
+        // 生成随机数决定从哪个池子抽取
+        const random = Math.random();
+        let selectedQuestion = null;
+        
+        if (random < wrongWeight && filteredWrong.length > 0) {
+            // 从错题本抽取
+            const availableWrong = filteredWrong.filter(q => !usedTitles.has(q.title));
+            if (availableWrong.length > 0) {
+                selectedQuestion = availableWrong[Math.floor(Math.random() * availableWrong.length)];
+            }
+        }
+        
+        if (!selectedQuestion && random < (wrongWeight + favoriteWeight) && filteredFavorites.length > 0) {
+            // 从收藏抽取
+            const availableFavorites = filteredFavorites.filter(q => !usedTitles.has(q.title));
+            if (availableFavorites.length > 0) {
+                selectedQuestion = availableFavorites[Math.floor(Math.random() * availableFavorites.length)];
+            }
+        }
+        
+        if (!selectedQuestion && filteredNormal.length > 0) {
+            // 从题库抽取
+            const availableNormal = filteredNormal.filter(q => !usedTitles.has(q.title));
+            if (availableNormal.length > 0) {
+                selectedQuestion = availableNormal[Math.floor(Math.random() * availableNormal.length)];
+            }
+        }
+        
+        // 如果还没选到题目，从任意可用题目中选一个
+        if (!selectedQuestion) {
+            const allAvailable = [...filteredWrong, ...filteredFavorites, ...filteredNormal]
+                .filter(q => !usedTitles.has(q.title));
+            if (allAvailable.length > 0) {
+                selectedQuestion = allAvailable[Math.floor(Math.random() * allAvailable.length)];
+            }
+        }
+        
+        if (selectedQuestion) {
+            selectedQuestions.push({...selectedQuestion, _type: questionType});
+            usedTitles.add(selectedQuestion.title);
+        }
+    }
+    
+    return selectedQuestions;
+}
+
 // 显示考试配置模态框
 async function showExamConfigModal() {
     if (!requireLogin('参加模拟考试')) {
@@ -2625,30 +2820,35 @@ function startConfiguredExam() {
     const judgeCount = parseInt(document.getElementById('judge-count-input').value) || 0;
     const fillCount = parseInt(document.getElementById('fill-count-input').value) || 0;
     
+    const subjectKey = currentSubject || '毛概';
+    
+    // 在开始抽题前，检查是否需要清理历史记录（整体检查）
+    checkAndClearHistoryIfNeeded(subjectKey, singleCount, multipleCount, judgeCount, fillCount);
+    
     const examQuestions = [];
     
-    // 添加单选题
+    // 添加单选题（使用智能抽题算法）
     if (singleCount > 0 && questionsData.single_choice) {
-        const selected = shuffleArray([...questionsData.single_choice]).slice(0, singleCount);
-        selected.forEach(q => examQuestions.push({ ...q, _type: 'single_choice' }));
+        const selected = smartSelectQuestions(subjectKey, 'single_choice', singleCount);
+        examQuestions.push(...selected);
     }
     
-    // 添加多选题
+    // 添加多选题（使用智能抽题算法）
     if (multipleCount > 0 && questionsData.multiple_choice) {
-        const selected = shuffleArray([...questionsData.multiple_choice]).slice(0, multipleCount);
-        selected.forEach(q => examQuestions.push({ ...q, _type: 'multiple_choice' }));
+        const selected = smartSelectQuestions(subjectKey, 'multiple_choice', multipleCount);
+        examQuestions.push(...selected);
     }
     
-    // 添加判断题
+    // 添加判断题（使用智能抽题算法）
     if (judgeCount > 0 && questionsData.true_false) {
-        const selected = shuffleArray([...questionsData.true_false]).slice(0, judgeCount);
-        selected.forEach(q => examQuestions.push({ ...q, _type: 'true_false' }));
+        const selected = smartSelectQuestions(subjectKey, 'true_false', judgeCount);
+        examQuestions.push(...selected);
     }
     
-    // 添加填空题
+    // 添加填空题（使用智能抽题算法）
     if (fillCount > 0 && questionsData.fill_blank) {
-        const selected = shuffleArray([...questionsData.fill_blank]).slice(0, fillCount);
-        selected.forEach(q => examQuestions.push({ ...q, _type: 'fill_blank' }));
+        const selected = smartSelectQuestions(subjectKey, 'fill_blank', fillCount);
+        examQuestions.push(...selected);
     }
     
     if (examQuestions.length === 0) {
@@ -2694,6 +2894,58 @@ function startConfiguredExam() {
     showQuestion();
     updateStatusDisplay();
     showMessage(`模拟考试已开始，共${currentQuestions.length}题，时长${totalQuestions}分钟`, 'info');
+}
+
+// 检查并清理历史记录（整体检查）
+function checkAndClearHistoryIfNeeded(subject, singleCount, multipleCount, judgeCount, fillCount) {
+    // 计算每种题型的总题目数
+    const singleTotal = questionsData.single_choice ? questionsData.single_choice.length : 0;
+    const multipleTotal = questionsData.multiple_choice ? questionsData.multiple_choice.length : 0;
+    const judgeTotal = questionsData.true_false ? questionsData.true_false.length : 0;
+    const fillTotal = questionsData.fill_blank ? questionsData.fill_blank.length : 0;
+    
+    // 获取每种题型的历史记录
+    const singleHistory = ExamQuestionHistory.getHistory(subject, 'single_choice');
+    const multipleHistory = ExamQuestionHistory.getHistory(subject, 'multiple_choice');
+    const judgeHistory = ExamQuestionHistory.getHistory(subject, 'true_false');
+    const fillHistory = ExamQuestionHistory.getHistory(subject, 'fill_blank');
+    
+    // 计算每种题型的作对题目数（去重）
+    const singleCorrect = new Set(singleHistory.correctQuestions).size;
+    const multipleCorrect = new Set(multipleHistory.correctQuestions).size;
+    const judgeCorrect = new Set(judgeHistory.correctQuestions).size;
+    const fillCorrect = new Set(fillHistory.correctQuestions).size;
+    
+    // 计算每种题型的可用题目数
+    const singleAvailable = singleTotal - singleCorrect;
+    const multipleAvailable = multipleTotal - multipleCorrect;
+    const judgeAvailable = judgeTotal - judgeCorrect;
+    const fillAvailable = fillTotal - fillCorrect;
+    
+    // 检查每种题型是否需要清理（仅当用户请求该题型且请求数超过可用数时）
+    if (singleCount > 0 && singleCount > singleAvailable) {
+        singleHistory.correctQuestions = [];
+        singleHistory.totalGenerated = 0;
+        ExamQuestionHistory.saveHistory(subject, 'single_choice', singleHistory);
+    }
+    
+    if (multipleCount > 0 && multipleCount > multipleAvailable) {
+        multipleHistory.correctQuestions = [];
+        multipleHistory.totalGenerated = 0;
+        ExamQuestionHistory.saveHistory(subject, 'multiple_choice', multipleHistory);
+    }
+    
+    if (judgeCount > 0 && judgeCount > judgeAvailable) {
+        judgeHistory.correctQuestions = [];
+        judgeHistory.totalGenerated = 0;
+        ExamQuestionHistory.saveHistory(subject, 'true_false', judgeHistory);
+    }
+    
+    if (fillCount > 0 && fillCount > fillAvailable) {
+        fillHistory.correctQuestions = [];
+        fillHistory.totalGenerated = 0;
+        ExamQuestionHistory.saveHistory(subject, 'fill_blank', fillHistory);
+    }
 }
 
 // 显示错题本模态框
@@ -3055,20 +3307,29 @@ function submitExam() {
     // 计算考试结果
     let correctCount = 0;
     let totalCount = currentQuestions.length;
+    const subjectKey = currentSubject || '毛概';
     
-    // 评判所有题目
+    // 评判所有题目并处理错题本记录
     for (let i = 0; i < currentQuestions.length; i++) {
         const question = currentQuestions[i];
         const userAnswer = userAnswers[i];
+        const questionType = question._type;
         
         if (userAnswer !== null && userAnswer !== '') {
             const correctAnswer = question.correctAnswer.trim().toUpperCase();
             const userAnswerUpper = userAnswer.toString().trim().toUpperCase();
+            const isCorrect = userAnswerUpper === correctAnswer;
             
-            if (userAnswerUpper === correctAnswer) {
+            if (isCorrect) {
                 correctCount++;
+                // 记录作对的题目到出题历史（按题型分别记录）
+                ExamQuestionHistory.addCorrectQuestion(subjectKey, questionType, question.title);
+            } else {
+                // 只在模拟考试模式下记录错题
+                addToWrongQuestions(questionType, question, userAnswer);
             }
         }
+        // 未作答的题目不记录到错题本
     }
     
     const wrongCount = totalCount - correctCount;
@@ -3084,7 +3345,7 @@ function showExamResultModal(score, totalCount, correctCount, wrongCount, accura
     const modal = document.getElementById('exam-result-modal');
     
     document.getElementById('exam-score').textContent = score;
-    document.getElementById('total-questions').textContent = totalCount;
+    document.getElementById('exam-total-questions').textContent = totalCount;
     document.getElementById('correct-questions').textContent = correctCount;
     document.getElementById('wrong-questions-count').textContent = wrongCount;
     document.getElementById('accuracy-rate').textContent = accuracy + '%';
@@ -3532,6 +3793,9 @@ async function handleSessionExpired(message) {
     // 清除用户信息
     currentUser = null;
     localStorage.removeItem('examUser');
+    
+    // 🔧 清理所有科目的考试记录会话
+    clearAllExamQuestionHistory();
     
     // 显示友好的提示弹窗
     showSessionExpiredModal(message);
@@ -4201,6 +4465,9 @@ async function performLogout(isForced = false) {
             // 🔐 停止会话检查
             stopSessionCheck();
             
+            // 🔧 清理所有科目的考试记录会话
+            clearAllExamQuestionHistory();
+            
             // 🔧 只删除examUser，保留其他本地存储
             localStorage.removeItem('examUser');
             
@@ -4224,6 +4491,8 @@ async function performLogout(isForced = false) {
         // 强制清理
         currentUser = null;
         localStorage.removeItem('examUser');
+        // 🔧 即使出错也要清理考试记录会话
+        clearAllExamQuestionHistory();
         updateUserInterface();
         showMessage('登出失败，但已清理用户数据', 'warning');
     }
