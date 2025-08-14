@@ -22,17 +22,19 @@ function checkVersion() {
         // 获取本地存储的版本号
         const localVersion = localStorage.getItem('appVersion');
         
-        // 如果没有本地版本号，认为是新用户，设置当前版本号
+ 
+        
+        // 如果没有本地版本号，认为是新用户，设置一个错误的版本号强制更新
         if (!localVersion) {
-            console.log('未找到本地版本号，设置为当前版本号');
-            localStorage.setItem('appVersion', CURRENT_VERSION);
-            return true; // 新用户不需要跳转
+    
+            localStorage.setItem('appVersion', '0.0.0');
+            return false; // 强制跳转到更新页面
         }
         
         // 比较版本号
         const isMatch = localVersion === CURRENT_VERSION;
-        console.log('版本比较:', {local: localVersion, current: CURRENT_VERSION, match: isMatch});
 
+        
         return isMatch;
     } catch (error) {
         console.error('版本检查过程中发生错误:', error);
@@ -124,14 +126,13 @@ function clearAllSessions() {
                 
                 // 跳转到主页
                 console.log('跳转到index.html');
-                // 添加参数避免重定向循环
-                window.location.href = './index.html?cleared=true';
+                window.location.href = './index.html';
             });
         }, 1000);
     } catch (error) {
         console.error('清理会话过程中发生错误:', error);
         // 即使发生错误，也跳转到主页
-        window.location.href = './index.html?cleared=true';
+        window.location.href = './index.html';
     }
 }
 
@@ -154,10 +155,6 @@ document.addEventListener('DOMContentLoaded', function() {
         origin: window.location.origin,
         protocol: window.location.protocol
     });
-    
-    // 检查URL参数，避免清理会话后的重定向循环
-    const urlParams = new URLSearchParams(window.location.search);
-    const isCleared = urlParams.get('cleared') === 'true';
     
     // 检查是否在begin.html页面（更可靠的检查方法）
     const pathname = window.location.pathname.toLowerCase();
@@ -219,32 +216,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // 如果是清理会话后的跳转，直接继续加载页面
-        if (isCleared) {
-            console.log('检测到清理会话后的跳转，直接加载页面');
-            // 移除URL参数，避免刷新时再次触发
-            if (history.replaceState) {
-                const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-                history.replaceState({path: newUrl}, '', newUrl);
-            }
-            // 重置计数器
-            if (isServerEnvironment()) {
-                sessionStorage.removeItem(REDIRECT_COUNT_KEY);
-            }
-            return;
-        }
-        
         // 立即执行版本检查，确保页面完全加载前完成
         const isVersionMatch = checkVersion();
-        console.log('版本检查:', {current: CURRENT_VERSION, local: localStorage.getItem('appVersion'), match: isVersionMatch});
         console.log('版本匹配结果:', isVersionMatch);
         if (!isVersionMatch) {
             // 版本号不一致，跳转到begin.html
-            console.log('版本不匹配，跳转到begin.html');
+        
             window.location.href = './begin.html';
         } else {
             // 版本匹配，重置计数器（仅在服务器环境下）
-            console.log('版本匹配，继续加载页面');
             if (isServerEnvironment()) {
                 sessionStorage.removeItem(REDIRECT_COUNT_KEY);
             }

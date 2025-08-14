@@ -385,12 +385,17 @@ function initEventListeners() {
     // 题号选择模态框关闭事件
     document.getElementById('close-question-number-modal').addEventListener('click', hideQuestionNumberModal);
     
+    // 修改模态框外部点击关闭逻辑，添加遮罩层阻止点击
     document.querySelectorAll('.modal').forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
                 // 检查是否是必须选择的模态框
                 if (modal.hasAttribute('data-required')) {
                     return; // 必须选择时不允许点击外部关闭
+                }
+                // 检查是否允许点击外部关闭（通过data-closeable属性控制）
+                if (modal.hasAttribute('data-closeable') && modal.getAttribute('data-closeable') === 'false') {
+                    return; // 不允许点击外部关闭
                 }
                 modal.classList.add('hidden');
             }
@@ -763,6 +768,7 @@ function showMembershipExpiryWarning(timeRemaining) {
     return new Promise((resolve) => {
         const modal = document.createElement('div');
         modal.className = 'modal';
+        modal.setAttribute('data-closeable', 'false');
         
         // 计算剩余时间显示
         const minutes = Math.floor(timeRemaining / (1000 * 60));
@@ -855,6 +861,7 @@ function showMembershipExpiredConfirmModal() {
     return new Promise((resolve) => {
         const modal = document.createElement('div');
         modal.className = 'modal';
+        modal.setAttribute('data-closeable', 'false');
         modal.innerHTML = `
             <div class="modal-content" style="max-width: 520px;">
                 <div class="modal-header" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white;">
@@ -927,6 +934,7 @@ function showMembershipExpiredConfirmModal() {
 function showMembershipExpiredLoginNotification() {
     const modal = document.createElement('div');
     modal.className = 'modal';
+    modal.setAttribute('data-closeable', 'false');
     modal.innerHTML = `
         <div class="modal-content" style="max-width: 480px;">
             <div class="modal-header" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white;">
@@ -1175,6 +1183,7 @@ function showLoginRequiredModal(actionName) {
     // 创建临时模态框
     const modal = document.createElement('div');
     modal.className = 'modal';
+    modal.setAttribute('data-closeable', 'false');
     modal.innerHTML = `
         <div class="modal-content" style="max-width: 400px;">
             <div class="modal-header">
@@ -1216,6 +1225,7 @@ function showMembershipRequiredModal(actionName) {
     // 创建临时模态框
     const modal = document.createElement('div');
     modal.className = 'modal';
+    modal.setAttribute('data-closeable', 'false');
     modal.innerHTML = `
         <div class="modal-content" style="max-width: 450px;">
             <div class="modal-header">
@@ -3626,6 +3636,7 @@ function showCloudSyncConfirmDialog() {
     return new Promise((resolve) => {
         const modal = document.createElement('div');
         modal.className = 'modal-overlay sync-confirm-overlay';
+        modal.setAttribute('data-closeable', 'false');
         modal.innerHTML = `
             <div class="modal-content sync-confirm-modal">
                 <div class="modal-header">
@@ -3811,6 +3822,7 @@ async function handleSessionExpired(message) {
 function showSessionExpiredModal(message) {
     const modal = document.createElement('div');
     modal.className = 'modal';
+    modal.setAttribute('data-closeable', 'false');
     modal.innerHTML = `
         <div class="modal-content" style="max-width: 480px;">
             <div class="modal-header" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white;">

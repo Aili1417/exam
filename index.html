@@ -206,7 +206,7 @@
     </div>
 
     <!-- 题号选择模态框 -->
-    <div id="question-number-modal" class="modal hidden">
+    <div id="question-number-modal" class="modal hidden" data-closeable="false">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>题目导航</h2>
@@ -221,7 +221,7 @@
     </div>
 
     <!-- 模拟考试配置模态框 -->
-    <div id="exam-config-modal" class="modal hidden">
+    <div id="exam-config-modal" class="modal hidden" data-closeable="false">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>模拟考试设置</h2>
@@ -298,7 +298,7 @@
     </div>
 
     <!-- 错题本模态框 -->
-    <div id="wrong-questions-modal" class="modal hidden">
+    <div id="wrong-questions-modal" class="modal hidden" data-closeable="false">
         <div class="modal-content large">
             <div class="modal-header">
                 <h2>错题本</h2>
@@ -326,7 +326,7 @@
     </div>
 
     <!-- 收藏题库模态框 -->
-    <div id="favorites-modal" class="modal hidden">
+    <div id="favorites-modal" class="modal hidden" data-closeable="false">
         <div class="modal-content large">
             <div class="modal-header">
                 <h2>收藏题库</h2>
@@ -343,7 +343,6 @@
                     </select>
                     <button id="clear-favorites" class="danger-btn">清空收藏</button>
                 </div>
-                
 
                 
                 <div id="favorites-list" class="questions-list">
@@ -354,7 +353,7 @@
     </div>
 
     <!-- 登录注册模态框 -->
-    <div id="auth-modal" class="modal hidden">
+    <div id="auth-modal" class="modal hidden" data-closeable="false">
         <div class="modal-content">
             <div class="modal-header">
                 <h2 id="auth-title">用户登录</h2>
@@ -395,8 +394,7 @@
                                     <option value="163.com">163.com</option>
                                     <option value="126.com">126.com</option>
                                     <option value="gmail.com">gmail.com</option>
-                                  
-                                </select>
+                                  \n                                </select>
                             </div>
                             <input type="hidden" id="register-email">
                         </div>
@@ -426,7 +424,7 @@
     </div>
 
     <!-- 个人中心模态框 -->
-    <div id="user-center-modal" class="modal hidden">
+    <div id="user-center-modal" class="modal hidden" data-closeable="false">
         <div class="modal-content large">
             <div class="modal-header">
                 <h2>个人中心</h2>
@@ -499,7 +497,7 @@
     </div>
 
     <!-- 修改密码模态框 -->
-    <div id="change-password-modal" class="modal hidden">
+    <div id="change-password-modal" class="modal hidden" data-closeable="false">
         <div class="modal-content">
             <div class="modal-header">
                 <h2><i class="fas fa-key"></i> 修改密码</h2>
@@ -572,7 +570,7 @@
     <script src="script.js"></script>
 
     <!-- 考试结果模态框 -->
-    <div id="exam-result-modal" class="modal hidden">
+    <div id="exam-result-modal" class="modal hidden" data-closeable="false">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>考试结果</h2>
@@ -613,7 +611,7 @@
     </div>
 
     <!-- 交卷确认模态框 -->
-    <div id="submit-confirm-modal" class="modal hidden">
+    <div id="submit-confirm-modal" class="modal hidden" data-closeable="false">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>确认交卷</h2>
@@ -643,7 +641,7 @@
     </div>
 
     <!-- 会员弹窗 -->
-    <div id="membership-modal" class="modal hidden">
+    <div id="membership-modal" class="modal hidden" data-closeable="false">
         <div class="modal-content large">
             <div class="modal-header">
                 <h3><i class="fas fa-crown"></i> 会员升级</h3>
@@ -780,7 +778,7 @@
     </div>
 
     <!-- 免费版提示弹窗 -->
-    <div id="free-version-modal" class="modal hidden">
+    <div id="free-version-modal" class="modal hidden" data-closeable="false">
         <div class="modal-content free-version-content">
             <div class="modal-header">
                 <h3><i class="fas fa-gift"></i> 免费版客户端</h3>
@@ -840,7 +838,7 @@
     </div>
 
     <!-- 登录提示弹窗 -->
-    <div id="login-required-modal" class="modal hidden">
+    <div id="login-required-modal" class="modal hidden" data-closeable="false">
         <div class="modal-content login-required-content">
             <div class="modal-header">
                 <h3><i class="fas fa-lock"></i> 需要登录</h3>
@@ -890,7 +888,7 @@
     </div>
 
     <!-- 重置记录确认对话框 -->
-    <div id="reset-confirm-modal" class="modal hidden">
+    <div id="reset-confirm-modal" class="modal hidden" data-closeable="false">
         <div class="modal-content reset-confirm-content">
             <div class="modal-header reset-confirm-header">
                 <h3><i class="fas fa-exclamation-triangle"></i> 重置记录确认</h3>
@@ -933,7 +931,7 @@
     </div>
 
     <!-- 重置成功提示对话框 -->
-    <div id="reset-success-modal" class="modal hidden">
+    <div id="reset-success-modal" class="modal hidden" data-closeable="false">
         <div class="modal-content reset-success-content">
             <div class="modal-header reset-success-header">
                 <h3><i class="fas fa-check-circle"></i> 重置成功</h3>
@@ -957,7 +955,7 @@
     </div>
 
     <!-- 科目选择模态框 -->
-    <div id="subject-selector-modal" class="modal hidden" data-required="true">
+    <div id="subject-selector-modal" class="modal hidden" data-required="true" data-closeable="false">
         <div class="modal-content">
             <div class="modal-header">
                 <h2><i class="fas fa-book"></i> 选择学习科目</h2>
