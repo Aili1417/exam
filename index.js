@@ -111,13 +111,13 @@ function clearAllSessions() {
                 
                 // 跳转到主页，并添加参数避免再次版本检查
                 console.log('跳转到index.html');
-                window.location.href = 'index.html?skipVersionCheck=true';
+                window.location.href = './index.html?skipVersionCheck=true';
             });
         }, 2000);
     } catch (error) {
         console.error('清理会话过程中发生错误:', error);
         // 即使发生错误，也跳转到主页
-        window.location.href = 'index.html?skipVersionCheck=true';
+        window.location.href = './index.html?skipVersionCheck=true';
     }
 }
 
@@ -137,17 +137,17 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('页面加载检查:', {
         href: window.location.href,
         pathname: window.location.pathname,
-        search: window.location.search
+        origin: window.location.origin,
+        protocol: window.location.protocol
     });
     
-    // 如果在begin.html页面，初始化清理功能
-    const pathname = window.location.pathname.toLowerCase();
-    const href = window.location.href.toLowerCase();
-    const isBeginPage = pathname.includes('begin.html') || 
-                       pathname.endsWith('/begin.html') || 
-                       pathname === '/begin.html' ||
-                       href.includes('begin.html');
+    // 检查是否在begin.html页面（更可靠的方法）
+    const currentPage = window.location.href.toLowerCase();
+    const isBeginPage = currentPage.includes('begin.html');
     
+    console.log('页面类型检查:', {currentPage, isBeginPage});
+    
+    // 如果在begin.html页面，初始化清理功能
     if (isBeginPage) {
         console.log('在begin.html页面，初始化清理功能');
         initBeginPage();
@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!isVersionMatch) {
                     // 版本号不一致，跳转到begin.html
                     console.log('版本不匹配，跳转到begin.html');
-                    window.location.href = 'begin.html';
+                    window.location.href = './begin.html';
                 }
             }, 100);
         } else {
@@ -180,8 +180,10 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // 为了确保在begin.html页面能正确绑定事件，也直接执行一次检查
-const currentPathname = window.location.pathname.toLowerCase();
-const isBeginPageDirect = currentPathname.includes('begin.html') || currentPathname.endsWith('/begin.html') || currentPathname === '/begin.html';
+const currentHref = window.location.href.toLowerCase();
+const isBeginPageDirect = currentHref.includes('begin.html');
+
+console.log('直接检查页面类型:', {currentHref, isBeginPageDirect});
 
 if (isBeginPageDirect) {
     // 如果DOM已经加载完成，直接初始化
