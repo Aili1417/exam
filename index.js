@@ -28,11 +28,11 @@ function checkVersion() {
             match: localVersion === CURRENT_VERSION
         });
         
-        // 如果没有本地版本号，认为是新用户，设置初始版本号并返回true
+        // 如果没有本地版本号，认为是新用户，设置一个错误的版本号强制更新
         if (!localVersion) {
-            console.log('新用户，设置初始版本号');
-            localStorage.setItem('appVersion', CURRENT_VERSION);
-            return true;
+            console.log('新用户，设置初始错误版本号');
+            localStorage.setItem('appVersion', '0.0.0');
+            return false; // 强制跳转到更新页面
         }
         
         // 比较版本号
