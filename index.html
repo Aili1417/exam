@@ -7,9 +7,14 @@
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js" onerror="console.log('particles.js CDN加载失败，将使用后备方案')"></script>
     <script src="https://unpkg.com/leancloud-storage@4.15.2/dist/av-min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <!-- EmailJS CDN资源采用动态加载，避免直接引用失败 -->
+    <!-- 后备方案，如果CDN加载失败则使用 -->
+    <script src="js/particles-fallback.js"></script>
+    <script src="js/emailjs-fallback.js"></script>
+    <script src="js/dynamic-loader.js"></script>
+    <script src="js/resource-status.js"></script>
     <script src="index.js"></script>
 </head>
 <body>
@@ -191,6 +196,25 @@
         <footer class="footer">
             <div class="status-bar">
                 <div id="current-progress" class="status-item">祝您学习愉快！</div>
+                
+                <!-- 资源加载状态面板 -->
+                <div id="resource-status" class="resource-status hidden">
+                    <div class="resource-item" id="emailjs-status">
+                        <i class="fas fa-envelope"></i>
+                        <span>邮件服务</span>
+                        <div class="status-badge loading">加载中</div>
+                    </div>
+                    <div class="resource-item" id="particles-status">
+                        <i class="fas fa-star"></i>
+                        <span>粒子背景</span>
+                        <div class="status-badge loading">加载中</div>
+                    </div>
+                    <div class="resource-item" id="leancloud-status">
+                        <i class="fas fa-cloud"></i>
+                        <span>云端数据</span>
+                        <div class="status-badge loading">加载中</div>
+                    </div>
+                </div>
             </div>
         </footer>
 

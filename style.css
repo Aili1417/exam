@@ -171,6 +171,63 @@ body {
     animation: none;
 }
 
+/* 资源状态面板样式 */
+.resource-status {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: 13px;
+}
+
+.resource-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: white;
+}
+
+.resource-item i {
+    font-size: 14px;
+    width: 14px;
+}
+
+.status-badge {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.status-badge.loading {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+    border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.status-badge.success {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+    border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.status-badge.fallback {
+    background: rgba(255, 149, 0, 0.2);
+    color: #ff9500;
+    border: 1px solid rgba(255, 149, 0, 0.3);
+}
+
+.status-badge.error {
+    background: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
 @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
@@ -1086,7 +1143,7 @@ body {
 
 .status-bar {
     display: flex;
-    justify-content: center;
+    justify-content: center; /* 默认居中 */
     align-items: center;
     padding: 15px 20px;
     background: rgba(255, 255, 255, 0.1);
@@ -1096,6 +1153,13 @@ body {
     font-size: 14px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+/* 当资源状态面板显示时，改为左右分布 */
+.status-bar.has-resource-status {
+    justify-content: space-between;
 }
 
 .status-item {
@@ -1742,6 +1806,24 @@ body {
     .nav-btn, .primary-btn {
         width: 100%;
         justify-content: center;
+    }
+    
+    /* 底部状态栏响应式 */
+    .status-bar {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .resource-status {
+        order: -1; /* 在手机上将资源状态放在上方 */
+        justify-content: center;
+    }
+    
+    #current-progress {
+        text-align: center;
     }
 }
 

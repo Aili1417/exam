@@ -36,10 +36,10 @@ class LeanCloudClient {
             this.ExamUser = AV.Object.extend('ExamUser');
 
             this.isInitialized = true;
-            console.log('LeanCloud初始化成功');
+           
             return { success: true, message: 'LeanCloud初始化成功' };
         } catch (error) {
-            console.error('LeanCloud初始化失败:', error);
+    
             return { success: false, message: `LeanCloud初始化失败: ${error.message}` };
         }
     }
@@ -73,7 +73,7 @@ class LeanCloudClient {
 
             return { success: true, data: questions };
         } catch (error) {
-            console.error('获取题目失败:', error);
+     
             return { success: false, message: `获取题目失败: ${error.message}` };
         }
     }
@@ -109,7 +109,7 @@ class LeanCloudClient {
            
             return { success: true, data: questions };
         } catch (error) {
-            console.error(`获取${type}题目失败:`, error);
+          
             return { success: false, message: `获取${type}题目失败: ${error.message}` };
         }
     }
@@ -173,7 +173,7 @@ class LeanCloudClient {
             const activeSession = user.get('activeSession');
             
             if (!activeSession) {
-                console.warn('会员用户缺少activeSession信息');
+       
                 return { success: true, message: '会话信息缺失，允许继续' };
             }
 
@@ -193,7 +193,7 @@ class LeanCloudClient {
 
             return { success: true, message: '会话有效' };
         } catch (error) {
-            console.error('会话验证失败:', error);
+    
             return { success: false, message: '会话验证失败: ' + error.message };
         }
     }
@@ -242,7 +242,7 @@ class LeanCloudClient {
                     await user.save();
                  
                 } catch (saveError) {
-                    console.error('❌ activeSession保存失败:', saveError);
+              
                     // 如果直接设置失败，尝试使用LeanCloud的addUnique方法
               
                     user.unset('activeSession'); // 先清除
@@ -257,7 +257,7 @@ class LeanCloudClient {
                 message: '会话创建成功' 
             };
         } catch (error) {
-            console.error('创建用户会话失败:', error);
+
             return { success: false, message: '创建会话失败: ' + error.message };
         }
     }
@@ -1073,6 +1073,15 @@ class LeanCloudClient {
     
             
             try {
+                // 检查 emailjs 是否可用
+                if (typeof emailjs === 'undefined') {
+                    console.warn('emailjs 未加载，验证码已生成但无法发送邮件');
+                    return { 
+                        success: true, 
+                        message: '验证码已生成，请联系管理员获取验证码或检查网络连接' 
+                    };
+                }
+                
                 const result = await emailjs.send(
                     'default_service', // 如果不工作，请替换为您的实际Service ID
                     'template_16tib69', // 您的模板ID

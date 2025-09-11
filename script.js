@@ -37,106 +37,136 @@ document.addEventListener('DOMContentLoaded', async function() {
     initParticles();
     initEventListeners();
     initResetDialogListeners();
-    initEmailJS(); // 初始化EmailJS
+    await initEmailJS(); // 等待EmailJS初始化完成
     initPasswordToggle(); // 初始化密码切换功能
     loadStoredData();
     await initSystem(); // 等待系统初始化完成
 });
 
 // 初始化EmailJS
-function initEmailJS() {
-    if (typeof emailjs !== 'undefined') {
-        emailjs.init('xzO6Di-kOyucPdAdr'); // 您的Public Key
-        console.log('EmailJS初始化成功');
-    } else {
-        console.error('EmailJS未加载，将在延迟后重试');
-        // 延迟重试，防止JS库加载时序问题
-        setTimeout(() => {
-            if (typeof emailjs !== 'undefined') {
-                emailjs.init('xzO6Di-kOyucPdAdr');
-                console.log('EmailJS延迟初始化成功');
-            } else {
-                console.error('EmailJS加载失败，验证码功能可能无法使用');
+async function initEmailJS() {
+    try {
+        // 检查是否已经初始化过
+        if (window.emailjsInitialized) {
+ 
+            return true;
+        }
+        
+        // 等待动态加载器完成EmailJS加载
+        if (window.dynamicLoader && window.dynamicLoader.loadEmailJS) {
+            const emailjsLoaded = await window.dynamicLoader.loadEmailJS();
+            if (!emailjsLoaded) {
+                console.warn('EmailJS加载失败，验证码功能可能受限');
+                return false;
             }
-        }, 1000);
+        }
+        
+        // 初始化EmailJS
+        if (typeof emailjs !== 'undefined' && emailjs.init) {
+            try {
+                emailjs.init('xzO6Di-kOyucPdAdr'); // 您的Public Key
+                window.emailjsInitialized = true; // 标记已初始化
+                console.log('EmailJS初始化成功');
+                return true;
+            } catch (error) {
+                console.error('EmailJS初始化错误:', error);
+                return false;
+            }
+        } else {
+            console.warn('EmailJS不可用，将使用后备方案');
+            return false;
+        }
+    } catch (error) {
+        console.error('EmailJS初始化过程出错:', error);
+        return false;
     }
 }
 
 // 初始化粒子背景
 function initParticles() {
-    particlesJS('particles-js', {
-        particles: {
-            number: {
-                value: 80,
-                density: {
-                    enable: true,
-                    value_area: 800
-                }
-            },
-            color: {
-                value: '#ffffff'
-            },
-            shape: {
-                type: 'circle'
-            },
-            opacity: {
-                value: 0.5,
-                random: false,
-                anim: {
-                    enable: false
-                }
-            },
-            size: {
-                value: 3,
-                random: true,
-                anim: {
-                    enable: false
-                }
-            },
-            line_linked: {
-                enable: true,
-                distance: 150,
-                color: '#ffffff',
-                opacity: 0.4,
-                width: 1
-            },
-            move: {
-                enable: true,
-                speed: 2,
-                direction: 'none',
-                random: false,
-                straight: false,
-                out_mode: 'out',
-                bounce: false
-            }
-        },
-        interactivity: {
-            detect_on: 'canvas',
-            events: {
-                onhover: {
-                    enable: true,
-                    mode: 'grab'
-                },
-                onclick: {
-                    enable: true,
-                    mode: 'push'
-                },
-                resize: true
-            },
-            modes: {
-                grab: {
-                    distance: 140,
-                    line_linked: {
-                        opacity: 1
+    // 检查 particlesJS 是否可用
+    if (typeof particlesJS === 'undefined') {
+
+        return;
+    }
+    
+    try {
+        particlesJS('particles-js', {
+            particles: {
+                number: {
+                    value: 80,
+                    density: {
+                        enable: true,
+                        value_area: 800
                     }
                 },
-                push: {
-                    particles_nb: 4
+                color: {
+                    value: '#ffffff'
+                },
+                shape: {
+                    type: 'circle'
+                },
+                opacity: {
+                    value: 0.5,
+                    random: false,
+                    anim: {
+                        enable: false
+                    }
+                },
+                size: {
+                    value: 3,
+                    random: true,
+                    anim: {
+                        enable: false
+                    }
+                },
+                line_linked: {
+                    enable: true,
+                    distance: 150,
+                    color: '#ffffff',
+                    opacity: 0.4,
+                    width: 1
+                },
+                move: {
+                    enable: true,
+                    speed: 2,
+                    direction: 'none',
+                    random: false,
+                    straight: false,
+                    out_mode: 'out',
+                    bounce: false
                 }
-            }
-        },
-        retina_detect: true
-    });
+            },
+            interactivity: {
+                detect_on: 'canvas',
+                events: {
+                    onhover: {
+                        enable: true,
+                        mode: 'grab'
+                    },
+                    onclick: {
+                        enable: true,
+                        mode: 'push'
+                    },
+                    resize: true
+                },
+                modes: {
+                    grab: {
+                        distance: 140,
+                        line_linked: {
+                            opacity: 1
+                        }
+                    },
+                    push: {
+                        particles_nb: 4
+                    }
+                }
+            },
+            retina_detect: true
+        });
+    } catch (error) {
+        console.error('粒子背景初始化失败:', error);
+    }
 }
 
 // 加载保存的错题本和收藏题目（按科目类型）
