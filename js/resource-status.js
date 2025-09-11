@@ -102,6 +102,16 @@
                 updateResourceStatus('leancloud', 'success', 'LeanCloud 连接正常');
             }
             
+            // 系统初始化相关日志
+            if (message.includes('系统初始化成功')) {
+                // 系统初始化成功时，再次确认LeanCloud状态
+                setTimeout(() => {
+                    if (window.leanCloudClient && window.leanCloudClient.isInitialized) {
+                        updateResourceStatus('leancloud', 'success', 'LeanCloud 连接正常');
+                    }
+                }, 500);
+            }
+            
             originalConsoleLog.apply(console, args);
         };
         
@@ -139,6 +149,42 @@
         }, 500);
     }
     
+    // 检查LeanCloud状态
+    function checkLeanCloudStatus() {
+        let checkCount = 0;
+        const maxChecks = 10; // 最多检查10次
+        
+        function performCheck() {
+            checkCount++;
+            
+            if (typeof AV !== 'undefined') {
+                // 检查LeanCloud是否已初始化
+                if (window.leanCloudClient && window.leanCloudClient.isInitialized) {
+                    updateResourceStatus('leancloud', 'success', 'LeanCloud 连接正常');
+                    console.log('✅ LeanCloud状态检查：已连接');
+                    return;
+                }
+            }
+            
+            // 如果还没初始化且检查次数没超限，继续检查
+            if (checkCount < maxChecks) {
+                updateResourceStatus('leancloud', 'loading', 'LeanCloud 初始化中...');
+                setTimeout(performCheck, 1000); // 每秒检查一次
+            } else {
+                // 超过最大检查次数，判断为连接失败
+                if (typeof AV === 'undefined') {
+                    updateResourceStatus('leancloud', 'error', 'LeanCloud SDK 未加载');
+                } else {
+                    updateResourceStatus('leancloud', 'error', 'LeanCloud 初始化失败');
+                }
+                console.warn('⚠️ LeanCloud状态检查：超时或失败');
+            }
+        }
+        
+        // 立即开始第一次检查
+        performCheck();
+    }
+    
     // 页面加载完成后初始化
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
@@ -146,6 +192,7 @@
             setupResourceMonitoring();
             showStatusPanel();
             checkParticlesStatus();
+            checkLeanCloudStatus(); // 添加LeanCloud状态检查
             
             // 5秒后自动隐藏状态面板（如果所有资源都正常）
             setTimeout(() => {
@@ -164,6 +211,7 @@
         setupResourceMonitoring();
         showStatusPanel();
         checkParticlesStatus();
+        checkLeanCloudStatus(); // 添加LeanCloud状态检查
     }
     
     // 导出到全局

@@ -15,16 +15,21 @@
         'https://cdnjs.cloudflare.com/ajax/libs/emailjs/3.2.0/email.min.js'
     ];
     
-    // 动态加载脚本函数
+    // 静默加载脚本函数（不显示控制台错误）
     function loadScript(src, timeout = 5000) {
         return new Promise((resolve, reject) => {
             const script = document.createElement('script');
             script.src = src;
             script.type = 'text/javascript';
             
+            // 使用静默方式，不在控制台显示错误
+            script.style.display = 'none';
+            
             const timer = setTimeout(() => {
-                script.remove();
-                reject(new Error(`脚本加载超时: ${src}`));
+                if (script.parentNode) {
+                    script.parentNode.removeChild(script);
+                }
+                reject(new Error(`静默加载超时: ${src}`));
             }, timeout);
             
             script.onload = () => {
@@ -34,11 +39,20 @@
             
             script.onerror = () => {
                 clearTimeout(timer);
-                script.remove();
-                reject(new Error(`脚本加载失败: ${src}`));
+                if (script.parentNode) {
+                    script.parentNode.removeChild(script);
+                }
+                // 静默处理错误，不输出到控制台
+                reject(new Error(`静默加载失败: ${src}`));
             };
             
-            document.head.appendChild(script);
+            // 静默添加到头部
+            try {
+                document.head.appendChild(script);
+            } catch (e) {
+                clearTimeout(timer);
+                reject(new Error(`无法添加脚本: ${src}`));
+            }
         });
     }
     
