@@ -950,7 +950,7 @@
         <div class="modal-content reset-confirm-content">
             <div class="modal-header reset-confirm-header">
                 <h3><i class="fas fa-exclamation-triangle"></i> 重置记录确认</h3>
-                <span class="close-btn" onclick="hideResetConfirmModal()">&times;</span>
+                <span class="close-btn" onclick="hideResetConfirmModal()">×</span>
             </div>
             <div class="modal-body">
                 <div class="reset-confirm-info">
@@ -983,6 +983,80 @@
                 </button>
                 <button class="danger-btn" onclick="confirmResetRecords()">
                     <i class="fas fa-trash-alt"></i> 确认重置
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 清空错题确认对话框 -->
+    <div id="clear-wrong-questions-modal" class="modal hidden" data-closeable="false">
+        <div class="modal-content reset-confirm-content">
+            <div class="modal-header reset-confirm-header">
+                <h3><i class="fas fa-exclamation-triangle"></i> 清空错题本确认</h3>
+                <span class="close-btn" onclick="hideClearWrongQuestionsModal()">×</span>
+            </div>
+            <div class="modal-body">
+                <div class="reset-confirm-info">
+                    <div class="warning-icon">
+                        ⚠️
+                    </div>
+                    <h4>确定要清空所有错题吗？</h4>
+                    <div class="reset-details">
+                        <p class="warning-text">此操作将：</p>
+                        <ul class="reset-list">
+                            <li><i class="fas fa-times-circle"></i> 删除错题本中的所有题目</li>
+                            <li><i class="fas fa-exclamation-circle"></i> 此操作不可撤销</li>
+                        </ul>
+                    </div>
+                    <p class="danger-text">
+                        <i class="fas fa-exclamation-circle"></i>
+                        清空后将无法恢复，请谨慎操作！
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="secondary-btn" onclick="hideClearWrongQuestionsModal()">
+                    <i class="fas fa-times"></i> 取消
+                </button>
+                <button class="danger-btn" onclick="confirmClearWrongQuestions()">
+                    <i class="fas fa-trash-alt"></i> 确认清空
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 清空收藏确认对话框 -->
+    <div id="clear-favorites-modal" class="modal hidden" data-closeable="false">
+        <div class="modal-content reset-confirm-content">
+            <div class="modal-header reset-confirm-header">
+                <h3><i class="fas fa-exclamation-triangle"></i> 清空收藏确认</h3>
+                <span class="close-btn" onclick="hideClearFavoritesModal()">×</span>
+            </div>
+            <div class="modal-body">
+                <div class="reset-confirm-info">
+                    <div class="warning-icon">
+                        ⚠️
+                    </div>
+                    <h4>确定要清空所有收藏吗？</h4>
+                    <div class="reset-details">
+                        <p class="warning-text">此操作将：</p>
+                        <ul class="reset-list">
+                            <li><i class="fas fa-star"></i> 删除收藏夹中的所有题目</li>
+                            <li><i class="fas fa-exclamation-circle"></i> 此操作不可撤销</li>
+                        </ul>
+                    </div>
+                    <p class="danger-text">
+                        <i class="fas fa-exclamation-circle"></i>
+                        清空后将无法恢复，请谨慎操作！
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="secondary-btn" onclick="hideClearFavoritesModal()">
+                    <i class="fas fa-times"></i> 取消
+                </button>
+                <button class="danger-btn" onclick="confirmClearFavorites()">
+                    <i class="fas fa-trash-alt"></i> 确认清空
                 </button>
             </div>
         </div>

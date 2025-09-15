@@ -11,6 +11,7 @@ let userAnswers = []; // 用户答案
 let judgedAnswers = []; // 已评判的答案
 let isExamMode = false; // 是否为考试模式
 let isReviewMode = false; // 查看详情模式
+let isPracticingWrongQuestions = false; // 是否在练习错题本中的题目
 let favorites = {}; // 收藏题目
 let wrongQuestions = {}; // 错题本
 let statistics = {
@@ -1734,12 +1735,19 @@ function processAnswer() {
     // 更新选项样式
     updateOptionStyles(isCorrect, correctAnswer);
     
-    // 处理错题本 - 只在模拟考试模式下记录错题
+    // 处理错题本 - 在模拟考试模式下记录错题，或在练习错题本时移除答对的题目
     if (isExamMode) {
         if (!isCorrect) {
             addToWrongQuestions(questionType, question, userAnswer);
         } else {
             removeFromWrongQuestions(questionType, question);
+        }
+    } else if (isPracticingWrongQuestions) {
+        // 在练习错题本中的题目时，如果答对了就从错题本中移除
+        if (isCorrect) {
+            removeFromWrongQuestions(questionType, question);
+            // 重置练习错题本标志
+            isPracticingWrongQuestions = false;
         }
     }
     
@@ -1887,6 +1895,14 @@ function goToNextQuestion() {
         if (isExamMode) {
             // 在考试模式下，显示交卷确认模态框而不是直接提交
             showSubmitConfirmModal();
+        } else if (isPracticingWrongQuestions) {
+            // 如果是在练习错题本中的题目，返回到错题本界面
+            showMessage('已完成错题练习', 'success');
+            setTimeout(() => {
+                returnToHome();
+                // 重新显示错题本
+                showWrongQuestionsModal();
+            }, 1000);
         } else {
             showMessage('恭喜！您已完成所有题目', 'success');
             setTimeout(() => {
@@ -2095,7 +2111,7 @@ function returnToHome() {
     examNav.classList.add('hidden');
     
     // 如果是考试模式或查看详情模式，恢复导航按钮
-    if (isExamMode || isReviewMode) {
+    if (isExamMode || isReviewMode || isPracticingWrongQuestions) {
         document.getElementById('home-btn').style.display = '';
         document.getElementById('wrong-questions-btn').style.display = '';
         document.getElementById('favorites-btn').style.display = '';
@@ -2108,6 +2124,7 @@ function returnToHome() {
     judgedAnswers = [];
     isExamMode = false;
     isReviewMode = false;
+    isPracticingWrongQuestions = false; // 重置练习错题本标志
     examStartTime = null;
     examDuration = 0;
     
@@ -3176,25 +3193,37 @@ function filterWrongQuestions() {
 
 // 清空错题本
 function clearWrongQuestions() {
-    if (confirm('确定要清空所有错题吗？')) {
-        // 获取当前科目
-        const subjectKey = currentSubject || '毛概';
-        
-        // 清空当前科目的错题本
-        wrongQuestions[subjectKey] = {
-            'single_choice': [],
-            'multiple_choice': [],
-            'true_false': [],
-            'fill_blank': []
-        };
-        
-        // 保存到本地存储（按科目存储）
-        const wrongQuestionsKey = `exam_wrong_questions_${subjectKey}`;
-        localStorage.setItem(wrongQuestionsKey, JSON.stringify(wrongQuestions[subjectKey]));
-        renderWrongQuestions();
-        updateStatisticsDisplay();
-        showMessage('错题本已清空', 'success');
-    }
+    // 显示自定义确认对话框
+    document.getElementById('clear-wrong-questions-modal').classList.remove('hidden');
+}
+
+// 确认清空错题本
+function confirmClearWrongQuestions() {
+    // 隐藏确认对话框
+    hideClearWrongQuestionsModal();
+    
+    // 获取当前科目
+    const subjectKey = currentSubject || '毛概';
+    
+    // 清空当前科目的错题本
+    wrongQuestions[subjectKey] = {
+        'single_choice': [],
+        'multiple_choice': [],
+        'true_false': [],
+        'fill_blank': []
+    };
+    
+    // 保存到本地存储（按科目存储）
+    const wrongQuestionsKey = `exam_wrong_questions_${subjectKey}`;
+    localStorage.setItem(wrongQuestionsKey, JSON.stringify(wrongQuestions[subjectKey]));
+    renderWrongQuestions();
+    updateStatisticsDisplay();
+    showMessage('错题本已清空', 'success');
+}
+
+// 隐藏清空错题本确认对话框
+function hideClearWrongQuestionsModal() {
+    document.getElementById('clear-wrong-questions-modal').classList.add('hidden');
 }
 
 // 练习错题
@@ -3211,6 +3240,9 @@ function practiceWrongQuestion(type, index) {
     userAnswers = [null];
     judgedAnswers = [false];
     isExamMode = false;
+    
+    // 添加一个标志，表示当前是在练习错题本中的题目
+    isPracticingWrongQuestions = true;
     
     hideWrongQuestionsModal();
     
@@ -3327,25 +3359,37 @@ function filterFavorites() {
 // 清空收藏
 // 清空收藏
 function clearFavorites() {
-    if (confirm('确定要清空所有收藏吗？')) {
-        // 获取当前科目
-        const subjectKey = currentSubject || '毛概';
-        
-        // 清空当前科目的收藏
-        favorites[subjectKey] = {
-            'single_choice': [],
-            'multiple_choice': [],
-            'true_false': [],
-            'fill_blank': []
-        };
-        
-        // 保存到本地存储（按科目存储）
-        const favoritesKey = `exam_favorites_${subjectKey}`;
-        localStorage.setItem(favoritesKey, JSON.stringify(favorites[subjectKey]));
-        renderFavorites();
-        updateStatisticsDisplay();
-        showMessage('收藏已清空', 'success');
-    }
+    // 显示自定义确认对话框
+    document.getElementById('clear-favorites-modal').classList.remove('hidden');
+}
+
+// 确认清空收藏
+function confirmClearFavorites() {
+    // 隐藏确认对话框
+    hideClearFavoritesModal();
+    
+    // 获取当前科目
+    const subjectKey = currentSubject || '毛概';
+    
+    // 清空当前科目的收藏
+    favorites[subjectKey] = {
+        'single_choice': [],
+        'multiple_choice': [],
+        'true_false': [],
+        'fill_blank': []
+    };
+    
+    // 保存到本地存储（按科目存储）
+    const favoritesKey = `exam_favorites_${subjectKey}`;
+    localStorage.setItem(favoritesKey, JSON.stringify(favorites[subjectKey]));
+    renderFavorites();
+    updateStatisticsDisplay();
+    showMessage('收藏已清空', 'success');
+}
+
+// 隐藏清空收藏确认对话框
+function hideClearFavoritesModal() {
+    document.getElementById('clear-favorites-modal').classList.add('hidden');
 }
 
 // 练习收藏题目
@@ -3474,6 +3518,8 @@ function submitExam() {
                 correctCount++;
                 // 记录作对的题目到出题历史（按题型分别记录）
                 ExamQuestionHistory.addCorrectQuestion(subjectKey, questionType, question.title);
+                // 如果答对了，从错题本中移除
+                removeFromWrongQuestions(questionType, question);
             } else {
                 // 只在模拟考试模式下记录错题
                 addToWrongQuestions(questionType, question, userAnswer);
