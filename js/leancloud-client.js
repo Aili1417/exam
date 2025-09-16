@@ -1399,10 +1399,50 @@ class LeanCloudClient {
             if (membershipType === 'vip' || membershipType === 'svip') {
                 // 获取当前时间（东八区）
                 const now = new Date();
-                membershipStartTime = now;
                 
-                // 计算结束时间：开始时间 + 天数
-                membershipEndTime = new Date(now.getTime() + membershipDays * 24 * 60 * 60 * 1000);
+                // 如果用户已经是同类型的会员，则在现有结束时间基础上延长
+                if (this.currentUser && 
+                    this.currentUser.membershipType === membershipType && 
+                    this.currentUser.membershipEndTime) {
+                    // 使用现有的开始时间
+                    membershipStartTime = new Date(this.currentUser.membershipStartTime);
+                    
+                    // 在现有结束时间基础上增加新的时间
+                    const currentEndTime = new Date(this.currentUser.membershipEndTime);
+                    
+                    // 根据originalUnit字段确定时间单位
+                    let timeInMilliseconds = 0;
+                    const originalUnit = cdkObject.get('originalUnit') || 'hours';
+                    
+                    if (originalUnit === 'days') {
+                        // 如果单位是天
+                        timeInMilliseconds = membershipDays * 24 * 60 * 60 * 1000;
+                    } else {
+                        // 默认单位是小时
+                        timeInMilliseconds = membershipDays * 60 * 60 * 1000;
+                    }
+                    
+                    // 计算新的结束时间：现有结束时间 + 增加的时间
+                    membershipEndTime = new Date(currentEndTime.getTime() + timeInMilliseconds);
+                } else {
+                    // 新用户或升级用户，使用当前时间作为开始时间
+                    membershipStartTime = now;
+                    
+                    // 根据originalUnit字段确定时间单位
+                    let timeInMilliseconds = 0;
+                    const originalUnit = cdkObject.get('originalUnit') || 'hours';
+                    
+                    if (originalUnit === 'days') {
+                        // 如果单位是天
+                        timeInMilliseconds = membershipDays * 24 * 60 * 60 * 1000;
+                    } else {
+                        // 默认单位是小时
+                        timeInMilliseconds = membershipDays * 60 * 60 * 1000;
+                    }
+                    
+                    // 计算结束时间：开始时间 + 时间（根据单位）
+                    membershipEndTime = new Date(now.getTime() + timeInMilliseconds);
+                }
                 
               
             }
@@ -1459,9 +1499,23 @@ class LeanCloudClient {
                 'sssvip': 'SSSVIP'
             }[membershipType] || membershipType;
 
-            const successMessage = membershipType === 'sssvip' 
-                ? `🎉 恭喜！您已成功升级为${membershipDisplayName}永久会员！`
-                : `🎉 恭喜！您已成功升级为${membershipDisplayName}会员，有效期${membershipDays}天！`;
+            // 获取时间单位显示名称
+            const originalUnit = cdkObject.get('originalUnit') || 'hours';
+            const unitDisplayName = originalUnit === 'days' ? '天' : '小时';
+
+            // 根据是否是续费来显示不同的消息
+            let successMessage = '';
+            if (membershipType === 'sssvip') {
+                successMessage = `🎉 恭喜！您已成功升级为${membershipDisplayName}永久会员！`;
+            } else if (this.currentUser && 
+                      this.currentUser.membershipType === membershipType && 
+                      this.currentUser.membershipEndTime) {
+                // 续费情况
+                successMessage = `🎉 恭喜！您已成功为${membershipDisplayName}会员续费，增加${membershipDays}${unitDisplayName}！`;
+            } else {
+                // 新购买或升级情况
+                successMessage = `🎉 恭喜！您已成功升级为${membershipDisplayName}会员，有效期${membershipDays}${unitDisplayName}！`;
+            }
 
           
             return {
@@ -1471,7 +1525,9 @@ class LeanCloudClient {
                     membershipType: membershipType,
                     membershipDays: membershipDays,
                     startTime: membershipStartTime,
-                    endTime: membershipEndTime
+                    endTime: membershipEndTime,
+                    originalUnit: originalUnit,
+                    unitDisplayName: unitDisplayName
                 }
             };
 

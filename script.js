@@ -4946,7 +4946,9 @@ async function handleCDKActivation() {
                 // 显示会员详情
                 if (result.data && result.data.membershipType) {
                     setTimeout(() => {
-                        showMessage(`恭喜您成为${result.data.membershipType.toUpperCase()}会员!`, 'success');
+                        // 使用返回的时间单位信息
+                        const unitDisplayName = result.data.unitDisplayName || '小时';
+                        showMessage(`恭喜您成为${result.data.membershipType.toUpperCase()}会员，有效期增加${result.data.membershipDays}${unitDisplayName}!`, 'success');
                     }, 1500);
                 }
             }
