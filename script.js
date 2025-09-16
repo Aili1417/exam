@@ -65,7 +65,9 @@ async function initEmailJS() {
         // 初始化EmailJS
         if (typeof emailjs !== 'undefined' && emailjs.init) {
             try {
-                emailjs.init('xzO6Di-kOyucPdAdr'); // 您的Public Key
+                const publicKey = '5ASESHZ6jjhq13bbF'; // 正确的Public Key
+                console.log('正在初始化EmailJS，Public Key:', publicKey);
+                emailjs.init(publicKey);
                 window.emailjsInitialized = true; // 标记已初始化
                 console.log('EmailJS初始化成功');
                 return true;
@@ -4456,7 +4458,7 @@ async function handleSendVerificationCode() {
         const domain = document.getElementById('email-domain').value;
         
         if (!username) {
-            showMessage('请输入用户名', 'error');
+            showMessage('请输入邮箱@前面部分', 'error');
             document.getElementById('register-username').focus();
         } else if (!domain) {
             showMessage('请选择邮箱后缀', 'error');
@@ -4543,7 +4545,7 @@ async function handleRegister(e) {
     const domain = document.getElementById('email-domain').value;
     
     if (!username) {
-        showMessage('请输入用户名', 'error');
+        showMessage('请输入邮箱@前面部分', 'error');
         document.getElementById('register-username').focus();
         return;
     }

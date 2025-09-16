@@ -9,6 +9,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js" onerror="console.log('particles.js CDN加载失败，将使用后备方案')"></script>
     <script src="https://unpkg.com/leancloud-storage@4.15.2/dist/av-min.js"></script>
+    <!-- EmailJS CDN - 使用多个源确保加载成功 -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3.11.0/dist/email.min.js" 
+            onerror="console.log('EmailJS jsDelivr CDN加载失败，尝试其他源')">
+    </script>
+    <script src="https://unpkg.com/@emailjs/browser@3.11.0/dist/email.min.js" 
+            onerror="console.log('EmailJS unpkg CDN加载失败，尝试其他源')">
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/emailjs-com/3.2.0/email.min.js" 
+            onerror="console.log('EmailJS CloudFlare CDN加载失败')">
+    </script>
     <!-- EmailJS 静默加载，不产生控制台错误 -->
     <!-- 后备方案，如果CDN加载失败则使用 -->
     <script src="js/particles-fallback.js"></script>
@@ -444,7 +454,7 @@
                         <div class="form-group">
                             <label for="register-email">邮箱</label>
                             <div class="email-input-group">
-                                <input type="text" id="register-username" placeholder="用户名" required>
+                                <input type="text" id="register-username" placeholder="请输入邮箱@前面部分" required>
                                 <span class="email-separator">@</span>
                                 <select id="email-domain" required>
                                     <option value="">选择邮箱</option>

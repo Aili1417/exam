@@ -10,6 +10,7 @@
             init: function(publicKey) {
                 
                 this.publicKey = publicKey;
+                console.log('EmailJS后备方案已初始化，Public Key:', publicKey);
                 return this;
             },
             
@@ -25,11 +26,13 @@
                             return;
                         }
                         
+                        console.warn('⚠️ EmailJS CDN加载失败，正在使用后备方案发送邮件。邮件功能可能受限。');
+                        
                         // 模拟成功（在真实环境中可以集成其他邮件服务）
                        
                         resolve({
                             status: 200,
-                            text: 'OK (fallback mode)'
+                            text: 'OK (fallback mode) - EmailJS CDN加载失败，使用后备方案'
                         });
                     }, 800); // 模拟网络延迟
                 });

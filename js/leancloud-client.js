@@ -1082,19 +1082,40 @@ class LeanCloudClient {
                     };
                 }
                 
+                // 检查是否使用的是后备方案
+                if (emailjs._isBackup) {
+                    console.warn('⚠️ 正在使用EmailJS后备方案，邮件发送功能可能受限');
+                    return { 
+                        success: true, 
+                        message: '验证码已生成，但邮件发送功能当前不可用。请联系管理员获取验证码' 
+                    };
+                }
+                
+                // 使用正确的Service ID和模板ID
+                const serviceID = 'service_af28rse'; // 正确的Service ID
+                const templateID = 'template_16tib69'; // 模板ID
+                const publicKey = '5ASESHZ6jjhq13bbF'; // 正确的Public Key
+                
+                
+                
                 const result = await emailjs.send(
-                    'default_service', // 如果不工作，请替换为您的实际Service ID
-                    'template_16tib69', // 您的模板ID
+                    serviceID,
+                    templateID,
                     templateParams,
-                    'xzO6Di-kOyucPdAdr' // 您的Public Key
+                    publicKey
                 );
          
+                console.log('邮件发送成功:', result);
+                return { 
+                    success: true, 
+                    message: '验证码已发送到您的邮箱，请查收'
+                };
             } catch (emailError) {
                 console.error('邮件发送失败:', emailError);
                 // 邮件发送失败但验证码已保存，用户仍可以使用
                 return { 
                     success: true, 
-                    message: '验证码已生成，如果未收到邮件请检查垃圾邮件箱或重新发送' 
+                    message: '验证码已生成，如果未收到邮件请检查垃圾邮件箱或重新发送。错误详情: ' + emailError.message
                 };
             }
             
