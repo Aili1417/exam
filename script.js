@@ -3175,8 +3175,12 @@ async function showExamConfigModal() {
         return;
     }
     
-    // 🔐 触发会话检查
-    await triggerSessionCheck('开始模拟考试');
+    // 🔐 触发会话检查，如果会话失效则不继续打开模态框
+    const sessionCheckResult = await triggerSessionCheck('开始模拟考试');
+    if (!sessionCheckResult.success && sessionCheckResult.sessionExpired) {
+        // 会话已失效，不打开模态框
+        return;
+    }
     
     // 检查数据是否已加载，如果没有则重新计算统计信息
     if (!statistics.total) {
@@ -4158,13 +4162,13 @@ async function checkSessionValidity() {
         // 🔧 防止重复请求 - 如果正在检查中，直接返回
         if (sessionCheckInProgress) {
       
-            return;
+            return { success: true, sessionExpired: false };
         }
 
         // 只检查VIP和SVIP用户
         if (!currentUser || !currentUser.sessionId || 
             (currentUser.membershipType !== 'vip' && currentUser.membershipType !== 'svip')) {
-            return;
+            return { success: true, sessionExpired: false };
         }
 
         sessionCheckInProgress = true; // 🔒 设置请求锁
@@ -4176,14 +4180,18 @@ async function checkSessionValidity() {
             if (result.code === 'SESSION_EXPIRED') {
                 console.warn('⚠️ 会话已失效:', result.message);
                 await handleSessionExpired(result.message);
+                return { success: false, sessionExpired: true };
             } else {
                 console.error('❌ 会话验证失败:', result.message);
+                return { success: false, sessionExpired: false };
             }
         } else {
      
+            return { success: true, sessionExpired: false };
         }
     } catch (error) {
         console.error('会话检查失败:', error);
+        return { success: false, sessionExpired: false };
     } finally {
         sessionCheckInProgress = false; // 🔓 释放请求锁
     }
@@ -4193,15 +4201,15 @@ async function checkSessionValidity() {
 async function triggerSessionCheck(actionName = '操作') {
     if (!currentUser || !currentUser.sessionId || 
         (currentUser.membershipType !== 'vip' && currentUser.membershipType !== 'svip' && currentUser.membershipType !== 'sssvip')) {
-        return { success: true, message: '非会员用户，无需检查' };
+        return { success: true, sessionExpired: false, message: '非会员用户，无需检查' };
     }
 
 
     
-    // 直接调用检查函数
-    await checkSessionValidity();
+    // 直接调用检查函数并返回结果
+    const result = await checkSessionValidity();
     
-    return { success: true, message: '会话检查完成' };
+    return result;
 }
 
 // 🔄 显示云同步确认对话框
@@ -4476,14 +4484,36 @@ async function handleSessionExpired(message) {
     // 🔧 清理所有科目的考试记录会话
     clearAllExamQuestionHistory();
     
+    // 🔐 检查当前状态并采取对应措施
+    const examConfigModal = document.getElementById('exam-config-modal');
+    const isInExamConfigModal = examConfigModal && !examConfigModal.classList.contains('hidden');
+    const isCurrentlyInExam = isExamMode && !isReviewMode;
+    
+    if (isInExamConfigModal) {
+        // 如果在模拟考试配置框中，直接关闭配置框
+        hideExamConfigModal();
+    }
+    
+    if (isCurrentlyInExam) {
+        // 如果在考试中，直接返回首页
+        returnToHome();
+    }
+    
     // 显示友好的提示弹窗
     showSessionExpiredModal(message);
     
-    // 返回主页并显示登录界面
-    returnToHome();
-    setTimeout(() => {
-        showAuthModal();
-    }, 1000);
+    // 如果不在考试中，也返回主页并显示登录界面
+    if (!isCurrentlyInExam) {
+        returnToHome();
+        setTimeout(() => {
+            showAuthModal();
+        }, 1000);
+    } else {
+        // 在考试中的情况，延迟显示登录界面
+        setTimeout(() => {
+            showAuthModal();
+        }, 1000);
+    }
 }
 
 // 显示会话过期提示弹窗
