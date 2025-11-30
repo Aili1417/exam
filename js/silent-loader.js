@@ -25,7 +25,7 @@
             };
             testImage.onerror = () => {
                 // 网络不可用，直接使用后备方案
-                console.log('📡 网络检测：使用EmailJS后备方案');
+   
                 emailjsLoaded = true;
                 resolve(true);
             };
@@ -50,7 +50,7 @@
                             if (iframe.contentWindow.emailjs) {
                                 window.emailjs = iframe.contentWindow.emailjs;
                                 emailjsLoaded = true;
-                                console.log('✅ EmailJS 已静默加载');
+                           
                             }
                             document.body.removeChild(iframe);
                             resolve(true);
@@ -59,7 +59,7 @@
                         script.onerror = () => {
                             // 加载失败，使用后备方案
                             document.body.removeChild(iframe);
-                            console.log('🔄 EmailJS CDN不可用，使用后备方案');
+                    
                             emailjsLoaded = true;
                             resolve(true);
                         };
@@ -70,7 +70,7 @@
                     } catch (e) {
                         // 任何错误都回退到后备方案
                         document.body.removeChild(iframe);
-                        console.log('🛡️ 回退到EmailJS后备方案');
+               
                         emailjsLoaded = true;
                         resolve(true);
                     }
@@ -80,7 +80,7 @@
                     if (iframe.parentNode) {
                         document.body.removeChild(iframe);
                     }
-                    console.log('📧 使用EmailJS后备方案');
+    
                     emailjsLoaded = true;
                     resolve(true);
                 };

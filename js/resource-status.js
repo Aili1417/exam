@@ -161,7 +161,7 @@
                 // 检查LeanCloud是否已初始化
                 if (window.leanCloudClient && window.leanCloudClient.isInitialized) {
                     updateResourceStatus('leancloud', 'success', 'LeanCloud 连接正常');
-                    console.log('✅ LeanCloud状态检查：已连接');
+             
                     return;
                 }
             }
@@ -177,7 +177,7 @@
                 } else {
                     updateResourceStatus('leancloud', 'error', 'LeanCloud 初始化失败');
                 }
-                console.warn('⚠️ LeanCloud状态检查：超时或失败');
+
             }
         }
         

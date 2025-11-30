@@ -1,7 +1,7 @@
 // 版本号校验和会话清理功能
 
 // 当前版本号 - 更新此值以触发会话清理
-const CURRENT_VERSION = "1.0.521";
+const CURRENT_VERSION = "2.1.5";
 
 // 重定向计数器，防止无限循环
 const REDIRECT_COUNT_KEY = "version_check_redirect_count";
@@ -149,12 +149,7 @@ function initBeginPage() {
 
 // 页面加载时检查版本号
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('页面加载检查:', {
-        href: window.location.href,
-        pathname: window.location.pathname,
-        origin: window.location.origin,
-        protocol: window.location.protocol
-    });
+
     
     // 检查是否在begin.html页面（更可靠的检查方法）
     const pathname = window.location.pathname.toLowerCase();
@@ -162,12 +157,11 @@ document.addEventListener('DOMContentLoaded', function() {
                        pathname.endsWith('/begin.html') || 
                        pathname === '/begin' ||
                        pathname === '/begin/';
-    
-    console.log('页面类型检查:', {pathname, isBeginPage});
+
     
     // 如果在begin.html页面，初始化清理功能
     if (isBeginPage) {
-        console.log('在begin.html页面，初始化清理功能');
+ 
         initBeginPage();
         return;
     }
@@ -181,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
             redirectCount++;
             sessionStorage.setItem(REDIRECT_COUNT_KEY, redirectCount.toString());
             
-            console.log('重定向计数 (服务器环境):', redirectCount);
+    
             
             // 如果重定向次数超过限制，停止检查并显示错误
             if (redirectCount > MAX_REDIRECTS) {
@@ -239,7 +233,7 @@ const isBeginPageDirect = pathname.includes('begin.html') ||
                          pathname === '/begin' ||
                          pathname === '/begin/';
 
-console.log('直接检查页面类型:', {pathname, isBeginPageDirect});
+
 
 if (isBeginPageDirect) {
     // 如果DOM已经加载完成，直接初始化

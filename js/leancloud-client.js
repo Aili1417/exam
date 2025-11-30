@@ -9,6 +9,9 @@ class LeanCloudClient {
         this.Question = null;
         this.ExamUser = null;
         this.currentUser = null;
+        this.questionCollections = {}; // 存储各科目的Question集合类
+        this.enabledSubjects = []; // 启用的科目列表
+        this.userProgressAPI = null; // 用户进度API
     }
 
     /**
@@ -29,11 +32,28 @@ class LeanCloudClient {
                 serverURL: serverURL
             });
 
-            // 定义Question类
+            // 定义Question类（保留旧的，用于兼容）
             this.Question = AV.Object.extend('Question');
             
             // 定义ExamUser类
             this.ExamUser = AV.Object.extend('ExamUser');
+            
+            // 初始化科目API
+            if (window.subjectAPI && !window.subjectAPI.initialized) {
+                await window.subjectAPI.init();
+            }
+            
+            // 初始化用户进度API
+            if (window.userProgressAPI) {
+                const progressResult = window.userProgressAPI.init();
+                if (progressResult.success) {
+                    this.userProgressAPI = window.userProgressAPI;
+       
+                }
+            }
+            
+            // 加载启用的科目列表
+            await this.loadEnabledSubjects();
 
             this.isInitialized = true;
            
@@ -45,17 +65,78 @@ class LeanCloudClient {
     }
 
     /**
-     * 获取所有题目
+     * 加载启用的科目列表
      */
-    async getAllQuestions() {
+    async loadEnabledSubjects() {
+        try {
+            if (!window.subjectAPI) {
+        
+                this.enabledSubjects = this.getDefaultSubjects();
+                return { success: true, data: this.enabledSubjects };
+            }
+            
+            const result = await window.subjectAPI.getEnabledSubjects();
+            if (result.success) {
+                this.enabledSubjects = result.data;
+                
+                // 为每个科目创建对应的Question集合类
+                this.enabledSubjects.forEach(subject => {
+                    const collectionName = subject.questionCollection || `Question_${subject.name}`;
+                    this.questionCollections[subject.name] = AV.Object.extend(collectionName);
+                });
+                
+     
+                return { success: true, data: this.enabledSubjects };
+            } else {
+                throw new Error(result.message || '加载科目失败');
+            }
+        } catch (error) {
+
+            // 降级方案：使用默认科目
+            this.enabledSubjects = this.getDefaultSubjects();
+            this.enabledSubjects.forEach(subject => {
+                this.questionCollections[subject.name] = AV.Object.extend(`Question_${subject.name}`);
+            });
+            return { success: true, data: this.enabledSubjects };
+        }
+    }
+
+    /**
+     * 获取默认科目（降级方案）
+     */
+    getDefaultSubjects() {
+        return [
+            { name: '毛概', displayName: '毛泽东思想概论', icon: '🏛️', isEnabled: true, isDefault: true, order: 1, questionCollection: 'Question_MaoGai' },
+            { name: '思修', displayName: '思想道德修养', icon: '💭', isEnabled: true, isDefault: true, order: 2, questionCollection: 'Question_SiXiu' },
+            { name: '近代史', displayName: '中国近现代史纲要', icon: '📜', isEnabled: true, isDefault: true, order: 3, questionCollection: 'Question_JinDaiShi' },
+            { name: '马原', displayName: '马克思主义基本原理', icon: '⚡', isEnabled: true, isDefault: true, order: 4, questionCollection: 'Question_MaYuan' }
+        ];
+    }
+
+    /**
+     * 根据科目获取题目（从对应的集合中查询）
+     */
+    async getQuestionsBySubject(subjectName, type = null) {
         try {
             if (!this.isInitialized) {
                 throw new Error('LeanCloud未初始化');
             }
 
-            const query = new AV.Query(this.Question);
-            query.limit(1000); // 设置查询限制
-            query.ascending('createdAt'); // 按创建时间升序排列
+            // 获取对应科目的Question集合类
+            const QuestionClass = this.questionCollections[subjectName];
+            if (!QuestionClass) {
+                throw new Error(`未找到科目 "${subjectName}" 的题库集合`);
+            }
+
+            const query = new AV.Query(QuestionClass);
+            
+            // 如果指定了题型，添加题型过滤
+            if (type) {
+                query.equalTo('type', type);
+            }
+            
+            query.limit(1000);
+            query.ascending('createdAt');
 
             const results = await query.find();
             
@@ -66,14 +147,64 @@ class LeanCloudClient {
                 options: result.get('options') || [],
                 correctAnswer: result.get('correctAnswer'),
                 explanation: result.get('explanation') || '',
-                category: result.get('category') || '',
+                category: subjectName, // 自动添加category字段，保持兼容
                 createdAt: result.createdAt,
                 updatedAt: result.updatedAt
             }));
 
+
             return { success: true, data: questions };
         } catch (error) {
-     
+
+            return { success: false, message: `获取题目失败: ${error.message}` };
+        }
+    }
+
+    /**
+     * 获取所有启用科目的题目（用于兼容旧代码）
+     */
+    async getAllQuestions() {
+        try {
+            if (!this.isInitialized) {
+                throw new Error('LeanCloud未初始化');
+            }
+
+            const allQuestions = {};
+            
+            // 从每个启用的科目获取题目
+            for (const subject of this.enabledSubjects) {
+                const result = await this.getQuestionsBySubject(subject.name);
+                if (result.success) {
+                    allQuestions[subject.name] = result.data;
+                }
+            }
+
+            // 按题型分组（兼容旧结构）
+            const questionsByType = {
+                single_choice: [],
+                multiple_choice: [],
+                true_false: [],
+                fill_blank: []
+            };
+
+            Object.values(allQuestions).forEach(questions => {
+                questions.forEach(q => {
+                    if (questionsByType[q.type]) {
+                        questionsByType[q.type].push(q);
+                    }
+                });
+            });
+            
+            console.log(`✅ 获取所有科目题目总计:`, 
+                Object.values(allQuestions).reduce((sum, arr) => sum + arr.length, 0));
+
+            return { 
+                success: true, 
+                data: questionsByType,
+                dataBySubject: allQuestions  // 按科目分组的数据
+            };
+        } catch (error) {
+            console.error('获取所有题目失败:', error);
             return { success: false, message: `获取题目失败: ${error.message}` };
         }
     }
@@ -451,6 +582,80 @@ class LeanCloudClient {
                 errorMessage = error.message;
             } else if (error.code) {
                 errorMessage = `密码修改失败 (错误代码: ${error.code})`;
+            }
+            
+            return { 
+                success: false, 
+                message: errorMessage 
+            };
+        }
+    }
+
+    /**
+     * 修改用户名
+     */
+    async updateUsername(newUsername) {
+        try {
+            if (!this.isInitialized) {
+                throw new Error('LeanCloud未初始化');
+            }
+
+            if (!this.currentUser) {
+                throw new Error('用户未登录');
+            }
+
+            // 验证用户名格式
+            if (!newUsername || newUsername.trim().length === 0) {
+                throw new Error('用户名不能为空');
+            }
+
+            if (newUsername.length < 2 || newUsername.length > 20) {
+                throw new Error('用户名长度应在2-20位之间');
+            }
+
+            if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(newUsername)) {
+                throw new Error('用户名只能包含字母、数字、下划线和中文');
+            }
+
+            // 从ExamUser表获取用户
+            const query = new AV.Query(this.ExamUser);
+            const user = await query.get(this.currentUser.id);
+            
+            if (!user) {
+                throw new Error('用户不存在');
+            }
+
+            // 更新用户名
+            user.set('username', newUsername);
+            await user.save();
+
+            // 更新当前currentUser
+            this.currentUser.username = newUsername;
+            
+            
+
+            return { 
+                success: true, 
+                message: '用户名修改成功' 
+            };
+
+        } catch (error) {
+            console.error('用户名修改失败:', error);
+            
+            // 处理特定错误
+            let errorMessage = '用户名修改失败';
+            if (error.message.includes('用户不存在')) {
+                errorMessage = '用户信息异常，请重新登录';
+            } else if (error.message.includes('Connection') || 
+                       error.message.includes('网络') ||
+                       error.message.includes('Network')) {
+                errorMessage = '网络连接失败，请检查网络';
+            } else if (error.message.includes('长度') || 
+                       error.message.includes('为空') ||
+                       error.message.includes('包含')) {
+                errorMessage = error.message;
+            } else if (error.code) {
+                errorMessage = `用户名修改失败 (错误代码: ${error.code})`;
             }
             
             return { 
@@ -842,7 +1047,7 @@ class LeanCloudClient {
     }
 
     /**
-     * 同步本地数据到云端
+     * 同步本地数据到云端（使用新的UserProgressAPI）
      */
     async syncDataToCloud(localData) {
         try {
@@ -850,41 +1055,26 @@ class LeanCloudClient {
                 throw new Error('用户未登录');
             }
 
-            const query = new AV.Query(this.ExamUser);
-            const user = await query.get(this.currentUser.id);
-            
-            if (!user) {
-                throw new Error('用户不存在');
+            if (!this.userProgressAPI) {
+                throw new Error('用户进度API未初始化');
             }
 
-            // 更新用户数据
-            if (localData.progressData) {
-                user.set('progressData', localData.progressData);
+          
+
+            // 使用UserProgressAPI同步数据
+            const result = await this.userProgressAPI.syncUserProgress(this.currentUser.id, {
+                progressData: localData.progressData || {},
+                wrongQuestions: localData.wrongQuestions || {},
+                favorites: localData.favorites || {},
+                userStats: localData.userStats || {}
+            });
+
+            if (result.success) {
+                console.log('✅ 数据已同步到云端');
+                return { success: true, message: '数据同步成功' };
+            } else {
+                throw new Error(result.message);
             }
-            if (localData.wrongQuestions) {
-                user.set('wrongQuestions', localData.wrongQuestions);
-            }
-            if (localData.favorites) {
-                user.set('favorites', localData.favorites);
-            }
-            if (localData.userStats) {
-                user.set('userStats', localData.userStats);
-            }
-
-
-            await user.save();
-            
-            // 更新本地用户信息
-            this.currentUser.progressData = localData.progressData || this.currentUser.progressData;
-            this.currentUser.wrongQuestions = localData.wrongQuestions || this.currentUser.wrongQuestions;
-            this.currentUser.favorites = localData.favorites || this.currentUser.favorites;
-            this.currentUser.userStats = localData.userStats || this.currentUser.userStats;
-
-            
-            localStorage.setItem('examUser', JSON.stringify(this.currentUser));
-
-
-            return { success: true, message: '数据同步成功' };
         } catch (error) {
             console.error('同步数据到云端失败:', error);
             return { success: false, message: error.message || '同步失败' };
@@ -892,7 +1082,7 @@ class LeanCloudClient {
     }
 
     /**
-     * 从云端导入数据到本地
+     * 从云端导入数据到本地（使用新的UserProgressAPI）
      */
     async importDataFromCloud() {
         try {
@@ -900,31 +1090,20 @@ class LeanCloudClient {
                 throw new Error('用户未登录');
             }
 
-            const query = new AV.Query(this.ExamUser);
-            const user = await query.get(this.currentUser.id);
-            
-            if (!user) {
-                throw new Error('用户不存在');
+            if (!this.userProgressAPI) {
+                throw new Error('用户进度API未初始化');
             }
 
-            const cloudData = {
-                progressData: user.get('progressData') || {},
-                wrongQuestions: user.get('wrongQuestions') || {},
-                favorites: user.get('favorites') || {},
-                userStats: user.get('userStats') || {},
-                statistics: user.get('statistics') || {}
-            };
+            // 使用UserProgressAPI获取数据
+            const result = await this.userProgressAPI.getUserProgress(this.currentUser.id);
 
-            // 更新本地用户信息
-            this.currentUser.progressData = cloudData.progressData;
-            this.currentUser.wrongQuestions = cloudData.wrongQuestions;
-            this.currentUser.favorites = cloudData.favorites;
-            this.currentUser.userStats = cloudData.userStats;
-      
-            
-            localStorage.setItem('examUser', JSON.stringify(this.currentUser));
+            if (!result.success) {
+                throw new Error(result.message);
+            }
 
-      
+            const cloudData = result.data;
+
+            console.log('✅ 已从云端导入数据');
             return { success: true, message: '数据导入成功', data: cloudData };
         } catch (error) {
             console.error('从云端导入数据失败:', error);
@@ -1198,152 +1377,8 @@ class LeanCloudClient {
             user.set('membershipStartTime', null);
             user.set('membershipEndTime', null);
             
-            // 初始化进度数据 - 对应 exam_progress_${subject}_${type} 的格式
-            user.set('progressData', {
-                '毛概': {
-                    single_choice: {
-                        currentIndex: 0,
-                        userAnswers: [],
-                        judgedAnswers: [],
-                        detailedProgress: [],
-                        timestamp: Date.now()
-                    },
-                    multiple_choice: {
-                        currentIndex: 0,
-                        userAnswers: [],
-                        judgedAnswers: [],
-                        detailedProgress: [],
-                        timestamp: Date.now()
-                    },
-                    true_false: {
-                        currentIndex: 0,
-                        userAnswers: [],
-                        judgedAnswers: [],
-                        detailedProgress: [],
-                        timestamp: Date.now()
-                    },
-                    fill_blank: {
-                        currentIndex: 0,
-                        userAnswers: [],
-                        judgedAnswers: [],
-                        detailedProgress: [],
-                        timestamp: Date.now()
-                    }
-                },
-                '思修': {
-                    single_choice: {
-                        currentIndex: 0,
-                        userAnswers: [],
-                        judgedAnswers: [],
-                        detailedProgress: [],
-                        timestamp: Date.now()
-                    },
-                    multiple_choice: {
-                        currentIndex: 0,
-                        userAnswers: [],
-                        judgedAnswers: [],
-                        detailedProgress: [],
-                        timestamp: Date.now()
-                    },
-                    true_false: {
-                        currentIndex: 0,
-                        userAnswers: [],
-                        judgedAnswers: [],
-                        detailedProgress: [],
-                        timestamp: Date.now()
-                    },
-                    fill_blank: {
-                        currentIndex: 0,
-                        userAnswers: [],
-                        judgedAnswers: [],
-                        detailedProgress: [],
-                        timestamp: Date.now()
-                    }
-                },
-                '近代史': {
-                    single_choice: {
-                        currentIndex: 0,
-                        userAnswers: [],
-                        judgedAnswers: [],
-                        detailedProgress: [],
-                        timestamp: Date.now()
-                    },
-                    multiple_choice: {
-                        currentIndex: 0,
-                        userAnswers: [],
-                        judgedAnswers: [],
-                        detailedProgress: [],
-                        timestamp: Date.now()
-                    },
-                    true_false: {
-                        currentIndex: 0,
-                        userAnswers: [],
-                        judgedAnswers: [],
-                        detailedProgress: [],
-                        timestamp: Date.now()
-                    },
-                    fill_blank: {
-                        currentIndex: 0,
-                        userAnswers: [],
-                        judgedAnswers: [],
-                        detailedProgress: [],
-                        timestamp: Date.now()
-                    }
-                },
-                '马原': {
-                    single_choice: {
-                        currentIndex: 0,
-                        userAnswers: [],
-                        judgedAnswers: [],
-                        detailedProgress: [],
-                        timestamp: Date.now()
-                    },
-                    multiple_choice: {
-                        currentIndex: 0,
-                        userAnswers: [],
-                        judgedAnswers: [],
-                        detailedProgress: [],
-                        timestamp: Date.now()
-                    },
-                    true_false: {
-                        currentIndex: 0,
-                        userAnswers: [],
-                        judgedAnswers: [],
-                        detailedProgress: [],
-                        timestamp: Date.now()
-                    },
-                    fill_blank: {
-                        currentIndex: 0,
-                        userAnswers: [],
-                        judgedAnswers: [],
-                        detailedProgress: [],
-                        timestamp: Date.now()
-                    }
-                }
-            });
-            
-            // 初始化错题本 - 对应 exam_wrong_questions 的格式
-            user.set('wrongQuestions', {
-                '毛概': {},
-                '思修': {},
-                '近代史': {},
-                '马原': {}
-            });
-            
-            // 初始化收藏 - 对应 exam_favorites 的格式
-            user.set('favorites', {
-                '毛概': {},
-                '思修': {},
-                '近代史': {},
-                '马原': {}
-            });
-            
-            // 初始化用户统计 - 对应 exam_user_stats 的格式
-            user.set('userStats', {
-                correct: 0,
-                total: 0,
-                correctRate: 0
-            });
+            // 注意：不再初始化学习数据字段（progressData, wrongQuestions, favorites, userStats）
+            // 这些数据现在存储在UserProgress表中
             
             await user.save();
       
@@ -1565,4 +1600,3 @@ class LeanCloudClient {
 // 创建全局实例
 window.leanCloudClient = new LeanCloudClient();
 
-console.log('LeanCloud客户端已加载');

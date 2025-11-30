@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aili刷题系统</title>
+    <title>爱刷题</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
@@ -35,9 +35,10 @@
         <header class="header">
             <div class="logo">
                 <i class="fas fa-graduation-cap"></i>
-                <span>Aili刷题系统</span>
+                <span>爱刷题</span>
             </div>
-            <nav class="nav">
+            
+            <nav class="nav" id="main-nav">
                 <!-- 科目类型按钮 - 仅在首页显示 -->
                 <button id="subject-selector-btn" class="nav-btn home-only">
                 
@@ -85,25 +86,34 @@
         <main class="main">
             <!-- 欢迎页面 -->
             <section id="welcome-section" class="welcome-section">
-                <h1>欢迎使用Aili刷题系统</h1>
+                <h1>欢迎使用爱刷题</h1>
+                <p style="text-align: center; color: #f0eded; font-size: 14px; margin-top: -10px; margin-bottom: 20px; opacity: 0.8;">
+                    <i class="fas fa-hand-point-down" style="margin-right: 5px;"></i>
+                    往下滑动开始练习
+                </p>
                 <div class="welcome-content">
                     <div class="welcome-card">
-                        <h2><i class="fas fa-cloud"></i>统计信息</h2>
+                        <h2><i class="fas fa-user-circle"></i> 用户信息</h2>
                         <ul>
                             <li>
+                                <i class="fas fa-user"></i>
+                                用户名:
+                                <span id="home-username">未登录</span> 
+                            </li>
+                            <li>
+                                <i class="fas fa-crown"></i>
+                                会员类型:
+                                <span id="home-membership-type">非会员</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-calendar-alt"></i>
+                                到期时间:
+                                <span id="home-membership-expiry">--</span>
+                            </li>
+                            <li>
                                 <i class="fas fa-database"></i>
-                               总题目:
-                                <span id="total-questions">--</span> 
-                            </li>
-                            <li>
-                                <i class="fas fa-check-circle"></i>
-                               已完成:
-                                <span id="completed-questions">--</span>
-                            </li>
-                            <li>
-                                <i class="fas fa-percentage"></i>
-                               正确率:
-                                <span id="correct-rate">--%</span>
+                                当前科目题目数:
+                                <span id="home-subject-questions">--</span>
                             </li>
                         </ul>
                     </div>
@@ -201,6 +211,42 @@
                 </div>
             </section>
         </main>
+
+        <!-- 移动端底部导航栏 -->
+        <nav class="mobile-bottom-nav">
+            <button id="mobile-home-btn" class="nav-btn home-only">
+                <i class="fas fa-home"></i>
+                <span>首页</span>
+            </button>
+            <button id="mobile-subject-btn" class="nav-btn home-only">
+                <i class="fas fa-book"></i>
+                <span>科目</span>
+            </button>
+            <button id="mobile-wrong-btn" class="nav-btn">
+                <i class="fas fa-times-circle"></i>
+                <span>错题</span>
+            </button>
+            <button id="mobile-favorites-btn" class="nav-btn">
+                <i class="fas fa-star"></i>
+                <span>收藏</span>
+            </button>
+            <button id="mobile-user-btn" class="nav-btn home-only">
+                <i class="fas fa-user"></i>
+                <span>我的</span>
+            </button>
+        </nav>
+        
+        <!-- 移动端悬浮收藏按钮 -->
+        <button id="mobile-favorite-float-btn" class="mobile-favorite-float" style="display: none;">
+            <i class="far fa-star"></i>
+            <span>收藏</span>
+        </button>
+        
+        <!-- 移动端悬浮返回/交卷按钮 -->
+        <button id="mobile-home-float-btn" class="mobile-home-float" style="display: none;">
+            <i class="fas fa-home"></i>
+            <span>首页</span>
+        </button>
 
         <!-- 底部状态栏 -->
         <footer class="footer">
@@ -506,7 +552,12 @@
                             <i class="fas fa-user-circle"></i>
                         </div>
                         <div class="user-details">
-                            <h3 id="user-display-name">未登录</h3>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <h3 id="user-display-name">未登录</h3>
+                                <button id="edit-username-btn" class="icon-btn hidden" title="修改用户名" style="font-size: 14px; padding: 4px 8px;">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
                             <p id="user-name" style="color: #fff;">请先登录</p>
                             <span id="user-membership" class="membership-badge">非会员</span>
                         </div>
@@ -543,19 +594,19 @@
                         <div class="stats-grid">
                             <div class="stat-item">
                                 <div class="stat-number" id="user-total-questions">0</div>
-                                <div class="stat-label">已练习题目</div>
+                                <div class="stat-label">总练习题目</div>
                             </div>
                             <div class="stat-item">
                                 <div class="stat-number" id="user-correct-rate">0%</div>
-                                <div class="stat-label">正确率</div>
+                                <div class="stat-label">总正确率</div>
                             </div>
                             <div class="stat-item">
                                 <div class="stat-number" id="user-favorites-count">0</div>
-                                <div class="stat-label">收藏题目</div>
+                                <div class="stat-label">总收藏题目</div>
                             </div>
                             <div class="stat-item">
                                 <div class="stat-number" id="user-wrong-count">0</div>
-                                <div class="stat-label">错题数量</div>
+                                <div class="stat-label">总错题数量</div>
                             </div>
                         </div>
                     </div>
@@ -625,11 +676,44 @@
         </div>
     </div>
 
+    <!-- 修改用户名模态框 -->
+    <div id="edit-username-modal" class="modal hidden" data-closeable="false">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-edit"></i> 修改用户名</h2>
+                <button id="close-edit-username" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-username-form">
+                    <div class="form-group">
+                        <label for="new-username">新用户名</label>
+                        <input type="text" id="new-username" name="new-username" required 
+                               placeholder="请输入新的用户名" minlength="2" maxlength="20">
+                        <small class="password-hint">用户名长度2-20位，只能包含字母、数字、下划线和中文</small>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" id="cancel-edit-username" class="secondary-btn">取消</button>
+                        <button type="submit" id="submit-edit-username" class="primary-btn">
+                            <i class="fas fa-save"></i> 确认修改
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- 消息提示区域 -->
     <div id="message-area"></div>
 
     <!-- 引入配置文件 -->
     <script src="config/leancloud-config.js"></script>
+    
+    <!-- 引入SubjectAPI（科目管理） -->
+    <script src="js/subject-api.js"></script>
+    
+    <!-- 引入用户进度API -->
+    <script src="js/user-progress-api.js"></script>
     
     <!-- 引入LeanCloud客户端 -->
     <script src="js/leancloud-client.js"></script>
@@ -671,7 +755,7 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer" style="justify-content: center;">
                 <button id="return-home" class="primary-btn">返回首页</button>
                 <button id="review-exam" class="secondary-btn">查看详情</button>
             </div>

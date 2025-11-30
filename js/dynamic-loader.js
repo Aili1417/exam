@@ -31,13 +31,13 @@
                 if (script.parentNode) {
                     script.parentNode.removeChild(script);
                 }
-                console.log(`EmailJS加载超时: ${src}`);
+             
                 reject(new Error(`加载超时: ${src}`));
             }, timeout);
             
             script.onload = () => {
                 clearTimeout(timer);
-                console.log(`EmailJS加载成功: ${src}`);
+           
                 resolve(script);
             };
             
@@ -46,7 +46,6 @@
                 if (script.parentNode) {
                     script.parentNode.removeChild(script);
                 }
-                console.log(`EmailJS加载失败: ${src}`);
                 reject(new Error(`加载失败: ${src}`));
             };
             
@@ -55,7 +54,7 @@
                 document.head.appendChild(script);
             } catch (e) {
                 clearTimeout(timer);
-                console.log(`EmailJS添加脚本失败: ${src}`, e);
+                reject(new Error(`无法添加脚本: ${src}`));
                 reject(new Error(`无法添加脚本: ${src}`));
             }
         });
@@ -71,12 +70,12 @@
     
     async function performEmailJSLoad() {
         
-        console.log('开始加载EmailJS，尝试CDN列表:', emailjsCDNs);
+
         
         for (let i = 0; i < emailjsCDNs.length; i++) {
             const cdn = emailjsCDNs[i];
             try {
-                console.log(`尝试加载EmailJS CDN [${i + 1}/${emailjsCDNs.length}]: ${cdn}`);
+         
                 
                 await loadScript(cdn, 3000); // 3秒超时
                 
@@ -84,13 +83,13 @@
                 if (typeof emailjs !== 'undefined' && emailjs.init) {
                    
                     emailjsLoaded = true;
-                    console.log('EmailJS加载成功:', cdn);
+            
                     return true;
                 } else {
-                    console.log('EmailJS对象未正确初始化:', cdn);
+
                 }
             } catch (error) {
-                console.log(`EmailJS加载失败 [${i + 1}/${emailjsCDNs.length}]:`, error.message);
+       
                 continue;
             }
         }
@@ -99,11 +98,11 @@
         if (typeof emailjs !== 'undefined') {
           
             emailjsLoaded = true;
-            console.log('使用已加载的EmailJS');
+
             return true;
         }
         
-        console.log('所有EmailJS CDN加载失败，使用后备方案');
+
         return false;
     }
     

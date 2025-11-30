@@ -119,6 +119,11 @@ body {
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
+/* 移动端底部导航栏（桌面端默认隐藏） */
+.mobile-bottom-nav {
+    display: none;
+}
+
 /* 考试导航栏样式 */
 .exam-nav {
     display: flex;
@@ -1193,6 +1198,8 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.8);
     position: relative;
     animation: slideInLoading 0.4s ease;
+    max-width: 90%;
+    margin: 0 auto;
 }
 
 .spinner {
@@ -1765,14 +1772,205 @@ body {
 /* 响应式设计 */
 @media (max-width: 768px) {
     .header {
-        flex-direction: column;
-        gap: 15px;
+        display: none; /* 移动端完全隐藏顶部导航栏 */
     }
     
-    .nav {
+    /* 为底部导航栏留出空间 */
+    .container {
+        padding-bottom: 58px;
+    }
+    
+    /* 移动端底部导航栏 */
+    .mobile-bottom-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 50px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+        z-index: 1000;
+        padding: 0;
+        box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .mobile-bottom-nav .nav-btn {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        padding: 5px 2px;
+        font-size: 10px;
+        background: transparent;
+        border-radius: 0;
+        margin: 0;
+        color: #666;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+    
+    .mobile-bottom-nav .nav-btn i {
+        font-size: 20px;
+        transition: all 0.2s ease;
+    }
+    
+    .mobile-bottom-nav .nav-btn:hover,
+    .mobile-bottom-nav .nav-btn:active {
+        background: transparent;
+        color: #667eea;
+        transform: none;
+    }
+    
+    .mobile-bottom-nav .nav-btn:active i {
+        transform: scale(1.1);
+    }
+    
+    .mobile-bottom-nav .nav-btn span {
+        margin: 0;
+        font-weight: 400;
+    }
+    
+    /* 移动端悬浮收藏按钮 */
+    #favorite-btn {
+        position: fixed !important;
+        right: 15px !important;
+        bottom: 120px !important;
+        width: 48px !important;
+        height: 48px !important;
+        border-radius: 50% !important;
+        background: rgba(255, 255, 255, 0.95) !important;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 20px !important;
+        color: #666 !important;
+        z-index: 998 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    #favorite-btn:active {
+        transform: scale(0.9) !important;
+    }
+    
+    #favorite-btn.favorited i,
+    #favorite-btn .fas {
+        color: #fbbf24 !important;
+    }
+    
+    /* 移动端隐藏题目头部的收藏按钮容器（但保留按钮本身） */
+    .question-header .question-actions {
+        display: none;
+    }
+    
+    /* 移动端悬浮收藏按钮 */
+    .mobile-favorite-float {
+        display: none;
+        flex-direction: column;
+        position: fixed;
+        right: 15px;
+        bottom: 140px;
+        width: 56px;
+        height: 56px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        font-size: 18px;
+        color: #666;
+        z-index: 998;
+        border: none;
+        padding: 6px 4px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .mobile-favorite-float span {
+        font-size: 10px;
+        line-height: 1;
+        margin: 0;
+    }
+    
+    .mobile-favorite-float:active {
+        transform: scale(0.9);
+    }
+    
+    .mobile-favorite-float .fas {
+        color: #fbbf24;
+    }
+    
+    /* 移动端悬浮返回/交卷按钮 */
+    .mobile-home-float {
+        display: none;
+        flex-direction: column;
+        position: fixed;
+        right: 15px;
+        bottom: 70px;
+        width: 56px;
+        height: 56px;
+        border-radius: 12px;
+        background: rgba(103, 126, 234, 0.95);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        font-size: 18px;
+        color: white;
+        z-index: 998;
+        border: none;
+        padding: 6px 4px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .mobile-home-float span {
+        font-size: 10px;
+        line-height: 1;
+        margin: 0;
+    }
+    
+    .mobile-home-float:active {
+        transform: scale(0.9);
+    }
+    
+    /* 考试模式下变成红色交卷按钮 */
+    .mobile-home-float.exam-mode {
+        background: rgba(239, 68, 68, 0.95);
+    }
+    
+    .exam-nav {
+        flex-direction: column;
+        padding: 15px;
+        border: none;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        gap: 12px;
+    }
+    
+    .status-indicator {
         width: 100%;
         justify-content: center;
-        flex-wrap: wrap;
+    }
+    
+    .resource-status {
+        flex-direction: column;
+        width: 100%;
+        gap: 8px;
+    }
+    
+    .resource-item {
+        width: 100%;
+        justify-content: space-between;
     }
     
     .welcome-content {
@@ -1796,6 +1994,10 @@ body {
     
     .type-btn {
         width: 100%;
+        min-height: 60px;
+        padding: 12px 20px;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
     }
     
     .question-footer {
@@ -1824,6 +2026,16 @@ body {
     
     #current-progress {
         text-align: center;
+    }
+    
+    /* 加载框移动端样式 */
+    .loading-spinner {
+        padding: 30px 20px;
+        max-width: 85%;
+    }
+    
+    .loading-text {
+        font-size: 14px;
     }
 }
 
@@ -2967,15 +3179,35 @@ body {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
+    /* 移动端个人中心模态框宽度优化 */
+    #user-center-modal .modal-content {
+        width: 95% !important;
+        max-width: none !important;
+    }
+    
     .user-info-card {
         flex-direction: column;
         text-align: center;
         gap: 15px;
     }
     
+    /* 移动端名字和详情居中 */
+    .user-details {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .user-details > div {
+        justify-content: center;
+    }
+    
     .user-actions {
         flex-direction: row;
         justify-content: center;
+        width: 100%;
+        flex-wrap: wrap;
     }
     
     .data-actions {
@@ -4451,7 +4683,7 @@ body {
 }
 
 .subject-info p {
-    margin: 0 0 8px 0;
+    margin: 0 0 4px 0;
     font-size: 14px;
     color: #6b7280;
     line-height: 1.4;

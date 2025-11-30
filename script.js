@@ -32,6 +32,8 @@ let examDuration = 0; // 考试总时长（分钟）
 let currentSubject = null; // 当前选择的科目
 let allQuestionsData = {}; // 所有题目数据（未过滤）
 let selectedSubjectOption = null; // 当前选中的科目选项
+let enabledSubjects = []; // 启用的科目列表（动态加载）
+let subjectsLoaded = false; // 科目是否已加载
 
 // 初始化系统
 document.addEventListener('DOMContentLoaded', async function() {
@@ -41,6 +43,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     await initEmailJS(); // 等待EmailJS初始化完成
     initPasswordToggle(); // 初始化密码切换功能
     loadStoredData();
+    
+    // 页面加载时确保移动端悬浮按钮隐藏
+    const mobileFloatBtn = document.getElementById('mobile-favorite-float-btn');
+    const mobileHomeBtn = document.getElementById('mobile-home-float-btn');
+    if (mobileFloatBtn) mobileFloatBtn.style.display = 'none';
+    if (mobileHomeBtn) mobileHomeBtn.style.display = 'none';
+    
     await initSystem(); // 等待系统初始化完成
 });
 
@@ -57,7 +66,7 @@ async function initEmailJS() {
         if (window.dynamicLoader && window.dynamicLoader.loadEmailJS) {
             const emailjsLoaded = await window.dynamicLoader.loadEmailJS();
             if (!emailjsLoaded) {
-                console.warn('EmailJS加载失败，验证码功能可能受限');
+           
                 return false;
             }
         }
@@ -66,21 +75,21 @@ async function initEmailJS() {
         if (typeof emailjs !== 'undefined' && emailjs.init) {
             try {
                 const publicKey = '5ASESHZ6jjhq13bbF'; // 正确的Public Key
-                console.log('正在初始化EmailJS，Public Key:', publicKey);
+                
                 emailjs.init(publicKey);
                 window.emailjsInitialized = true; // 标记已初始化
                 console.log('EmailJS初始化成功');
                 return true;
             } catch (error) {
-                console.error('EmailJS初始化错误:', error);
+     
                 return false;
             }
         } else {
-            console.warn('EmailJS不可用，将使用后备方案');
+
             return false;
         }
     } catch (error) {
-        console.error('EmailJS初始化过程出错:', error);
+
         return false;
     }
 }
@@ -168,13 +177,16 @@ function initParticles() {
             retina_detect: true
         });
     } catch (error) {
-        console.error('粒子背景初始化失败:', error);
+     
     }
 }
 
 // 加载保存的错题本和收藏题目（按科目类型）
 function loadStoredWrongQuestionsAndFavorites() {
-    const subjects = ['毛概', '思修', '近代史', '马原']; // 假设这些是所有科目
+    // 使用动态加载的科目列表，如果还未加载则使用默认科目
+    let subjects = enabledSubjects.length > 0 
+        ? enabledSubjects.map(s => s.name) 
+        : ['毛概', '思修', '近代史', '马原']; // 默认科目
 
     wrongQuestions = {};
     favorites = {};
@@ -223,6 +235,12 @@ async function initSystem() {
         }
         
         updateStatus('已连接到云端数据库', 'connected');
+        
+        // 加载启用的科目列表
+        await loadEnabledSubjects();
+        
+        // 加载科目映射（从 SubjectAPI 获取）
+        await loadSubjectCategories();
         
         // 加载题目数据
         await loadQuestionsFromCloud();
@@ -336,6 +354,13 @@ function initEventListeners() {
     document.getElementById('close-change-password').addEventListener('click', hideChangePasswordModal);
     document.getElementById('cancel-change-password').addEventListener('click', hideChangePasswordModal);
     document.getElementById('change-password-form').addEventListener('submit', handleChangePassword);
+    
+    // 修改用户名相关事件
+    document.getElementById('edit-username-btn').addEventListener('click', showEditUsernameModal);
+    document.getElementById('close-edit-username').addEventListener('click', hideEditUsernameModal);
+    document.getElementById('cancel-edit-username').addEventListener('click', hideEditUsernameModal);
+    document.getElementById('edit-username-form').addEventListener('submit', handleEditUsername);
+    
     document.getElementById('logout-btn').addEventListener('click', handleLogout);
     document.getElementById('show-register').addEventListener('click', (e) => {
         e.preventDefault();
@@ -439,9 +464,218 @@ function initEventListeners() {
     });
     
     // 考试题目数超限提示模态框事件
+    // 考试题目数超限提示模态框事件
     document.getElementById('exam-limit-ok').addEventListener('click', function() {
         document.getElementById('exam-limit-modal').classList.add('hidden');
     });
+    
+    // 移动端底部导航栏事件
+    initMobileBottomNav();
+}
+
+// 初始化移动端底部导航栏
+function initMobileBottomNav() {
+    const mobileHomeBtn = document.getElementById('mobile-home-btn');
+    const mobileSubjectBtn = document.getElementById('mobile-subject-btn');
+    const mobileWrongBtn = document.getElementById('mobile-wrong-btn');
+    const mobileFavoritesBtn = document.getElementById('mobile-favorites-btn');
+    const mobileUserBtn = document.getElementById('mobile-user-btn');
+    
+    // 复用桌面端按钮的点击事件
+    if (mobileHomeBtn) {
+        mobileHomeBtn.addEventListener('click', () => {
+            document.getElementById('home-btn').click();
+        });
+    }
+    
+    if (mobileSubjectBtn) {
+        mobileSubjectBtn.addEventListener('click', () => {
+            document.getElementById('subject-selector-btn').click();
+        });
+    }
+    
+    if (mobileWrongBtn) {
+        mobileWrongBtn.addEventListener('click', () => {
+            document.getElementById('wrong-questions-btn').click();
+        });
+    }
+    
+    if (mobileFavoritesBtn) {
+        mobileFavoritesBtn.addEventListener('click', () => {
+            document.getElementById('favorites-btn').click();
+        });
+    }
+    
+    if (mobileUserBtn) {
+        mobileUserBtn.addEventListener('click', () => {
+            document.getElementById('user-center-btn').click();
+        });
+    }
+    
+    // 移动端悬浮收藏按钮
+    const mobileFloatFavoriteBtn = document.getElementById('mobile-favorite-float-btn');
+    if (mobileFloatFavoriteBtn) {
+        mobileFloatFavoriteBtn.addEventListener('click', () => {
+            const originalBtn = document.getElementById('favorite-btn');
+            if (originalBtn) {
+                originalBtn.click();
+            }
+        });
+    }
+    
+    // 移动端悬浮返回/交卷按钮
+    const mobileFloatHomeBtn = document.getElementById('mobile-home-float-btn');
+    if (mobileFloatHomeBtn) {
+        mobileFloatHomeBtn.addEventListener('click', () => {
+            if (isExamMode && !isReviewMode) {
+                // 考试模式下点击交卷
+                const submitBtn = document.getElementById('nav-submit-exam-btn');
+                if (submitBtn) {
+                    submitBtn.click();
+                }
+            } else {
+                // 非考试模式下返回首页
+                const homeBtn = document.getElementById('home-btn');
+                if (homeBtn) {
+                    homeBtn.click();
+                }
+            }
+        });
+    }
+}
+
+// 显示/隐藏移动端悬浮收藏按钮
+function toggleMobileFavoriteButton(show) {
+    if (window.innerWidth <= 768) {
+        const mobileFloatBtn = document.getElementById('mobile-favorite-float-btn');
+        const mobileHomeBtn = document.getElementById('mobile-home-float-btn');
+        
+        // 在首页时强制隐藏
+        const questionSection = document.getElementById('question-section');
+        const isOnHomePage = questionSection && questionSection.classList.contains('hidden');
+        
+        if (isOnHomePage) {
+            // 首页：强制隐藏所有悬浮按钮
+            if (mobileFloatBtn) {
+                mobileFloatBtn.style.display = 'none';
+                mobileFloatBtn.style.setProperty('display', 'none', 'important');
+            }
+            if (mobileHomeBtn) {
+                mobileHomeBtn.style.display = 'none';
+                mobileHomeBtn.style.setProperty('display', 'none', 'important');
+            }
+            return;
+        }
+        
+        if (mobileFloatBtn) {
+            if (show) {
+                mobileFloatBtn.style.display = 'flex';
+            } else {
+                mobileFloatBtn.style.display = 'none';
+            }
+        }
+        
+        if (mobileHomeBtn) {
+            if (show) {
+                mobileHomeBtn.style.display = 'flex';
+            } else {
+                mobileHomeBtn.style.display = 'none';
+            }
+            
+            // 根据模式更新按钮样式和图标
+            if (show) {
+                const icon = mobileHomeBtn.querySelector('i');
+                const text = mobileHomeBtn.querySelector('span');
+                if (isExamMode && !isReviewMode) {
+                    // 考试模式：红色交卷按钮
+                    mobileHomeBtn.classList.add('exam-mode');
+                    if (icon) icon.className = 'fas fa-paper-plane';
+                    if (text) text.textContent = '交卷';
+                } else {
+                    // 练习模式：蓝色返回按钮
+                    mobileHomeBtn.classList.remove('exam-mode');
+                    if (icon) icon.className = 'fas fa-home';
+                    if (text) text.textContent = '首页';
+                }
+            }
+        }
+    }
+}
+
+// 加载启用的科目列表
+async function loadEnabledSubjects() {
+    try {
+        // 从 LeanCloud 客户端获取启用的科目
+        if (window.leanCloudClient && window.leanCloudClient.enabledSubjects) {
+            enabledSubjects = window.leanCloudClient.enabledSubjects;
+            subjectsLoaded = true;
+        
+            
+            // 动态渲染科目选择器
+            renderSubjectSelector();
+            
+            return { success: true, data: enabledSubjects };
+        } else {
+            throw new Error('无法获取科目列表');
+        }
+    } catch (error) {
+
+        // 降级方案：使用默认科目
+        enabledSubjects = [
+            { name: '毛概', displayName: '毛泽东思想概论', icon: '🏛️', isDefault: true, questionCollection: 'Question_MaoGai' },
+            { name: '思修', displayName: '思想道德修养', icon: '💭', isDefault: true, questionCollection: 'Question_SiXiu' },
+            { name: '近代史', displayName: '中国近现代史纲要', icon: '📜', isDefault: true, questionCollection: 'Question_JinDaiShi' },
+            { name: '马原', displayName: '马克思主义基本原理', icon: '⚡', isDefault: true, questionCollection: 'Question_MaYuan' }
+        ];
+        subjectsLoaded = true;
+        renderSubjectSelector();
+        return { success: false, message: error.message };
+    }
+}
+
+// 动态渲染科目选择器
+function renderSubjectSelector() {
+    const container = document.querySelector('.subject-options');
+    if (!container) {
+   
+        return;
+    }
+    
+    // 清空现有内容
+    container.innerHTML = '';
+    
+    // 渲染每个启用的科目
+    enabledSubjects.forEach(subject => {
+        const option = document.createElement('div');
+        option.className = 'subject-option';
+        option.setAttribute('data-subject', subject.name);
+        
+        // 使用默认图标或通用图标
+        const icon = subject.icon || '📚';
+        
+        option.innerHTML = `
+            <div class="subject-icon">${icon}</div>
+            <div class="subject-info">
+                <h3>${subject.name}</h3>
+                <p>${subject.displayName || subject.name}</p>
+            </div>
+        `;
+        
+        // 添加点击事件
+        option.addEventListener('click', function() {
+            // 移除其他选项的选中状态
+            document.querySelectorAll('.subject-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            // 添加当前选项的选中状态
+            option.classList.add('selected');
+            selectedSubjectOption = subject.name;
+        });
+        
+        container.appendChild(option);
+    });
+    
+
 }
 
 // 从云端加载题目数据
@@ -449,14 +683,19 @@ async function loadQuestionsFromCloud() {
     try {
         showLoading('正在加载数据...');
         
+        // 使用新的getAllQuestions方法，它会从各科目的集合中加载题目
         const result = await window.leanCloudClient.getAllQuestions();
         if (!result.success) {
             throw new Error(result.message);
         }
         
-        // 保存所有题目数据（未过滤）
+        // result.data 是按题型分组的数据（兼容旧结构）
+        // result.dataBySubject 是按科目分组的数据（新结构）
+        
+        // 保存所有题目数据（按题型分组，未过滤）
         allQuestionsData = {};
-        result.data.forEach(question => {
+        const allQuestions = Object.values(result.data).flat();
+        allQuestions.forEach(question => {
             if (!allQuestionsData[question.type]) {
                 allQuestionsData[question.type] = [];
             }
@@ -469,13 +708,13 @@ async function loadQuestionsFromCloud() {
         // 根据当前科目过滤题目数据
         filterQuestionsBySubject();
 
-        updateStatus(`已加载 ${result.data.length} 个题目`, 'success');
+        updateStatus(`已加载 ${allQuestions.length} 个题目`, 'success');
         
         // 立即从加载的数据中计算统计信息，避免后续的重复计算和请求
         calculateStatisticsFromData();
         
     } catch (error) {
-        console.error('加载题目数据失败:', error);
+
         throw error;
     }
 }
@@ -526,15 +765,82 @@ async function loadStatistics() {
     }
 }
 
-// 更新统计信息显示
+// 更新主页用户信息显示
 function updateStatisticsDisplay() {
-    // 直接使用已计算的统计数据，避免重复计算
-    document.getElementById('total-questions').textContent = statistics.total || 0;
+    // 从localStorage读取用户信息（优先使用全局currentUser，若无则从localStorage读取）
+    let user = currentUser;
+    if (!user) {
+        const examUserStr = localStorage.getItem('examUser');
+        if (examUserStr) {
+            try {
+                user = JSON.parse(examUserStr);
+            } catch (e) {
+                console.warn('解析examUser失败:', e);
+            }
+        }
+    }
     
-    // 从本地存储获取用户统计
-    const userStats = getUserStatistics();
-    document.getElementById('completed-questions').textContent = userStats.total || 0;
-    document.getElementById('correct-rate').textContent = userStats.correctRate + '%';
+    // 更新用户信息
+    if (user) {
+        // 用户名
+        document.getElementById('home-username').textContent = user.username || '未知用户';
+        
+        // 会员类型
+        const membershipType = user.membershipType || '非会员';
+        const membershipElement = document.getElementById('home-membership-type');
+        membershipElement.textContent = membershipType;
+        
+        // 根据会员类型设置颜色
+        if (membershipType === 'sssvip') {
+            membershipElement.style.color = '#ff6b6b';
+            membershipElement.style.fontWeight = 'bold';
+        } else if (membershipType === 'svip') {
+            membershipElement.style.color = '#ffd700';
+            membershipElement.style.fontWeight = 'bold';
+        } else if (membershipType === 'vip') {
+            membershipElement.style.color = '#4ecdc4';
+            membershipElement.style.fontWeight = 'bold';
+        } else {
+            membershipElement.style.color = '';
+            membershipElement.style.fontWeight = '';
+        }
+        
+        // 到期时间
+        const expiryElement = document.getElementById('home-membership-expiry');
+        if (membershipType === 'sssvip') {
+            expiryElement.textContent = '永久有效';
+            expiryElement.style.color = '#ff6b6b';
+        } else if (user.membershipEndTime) {
+            const endDate = new Date(user.membershipEndTime);
+            expiryElement.textContent = endDate.toLocaleDateString('zh-CN');
+            
+            // 检查是否即将过期（7天内）
+            const daysLeft = Math.ceil((endDate - new Date()) / (1000 * 60 * 60 * 24));
+            if (daysLeft <= 0) {
+                expiryElement.style.color = '#ef4444';
+            } else if (daysLeft <= 7) {
+                expiryElement.style.color = '#f59e0b';
+            } else {
+                expiryElement.style.color = '';
+            }
+        } else {
+            expiryElement.textContent = '--';
+            expiryElement.style.color = '';
+        }
+    } else {
+        // 未登录状态
+        document.getElementById('home-username').textContent = '未登录';
+        document.getElementById('home-membership-type').textContent = '非会员';
+        document.getElementById('home-membership-expiry').textContent = '--';
+    }
+    
+    // 当前科目题目数
+    const subjectQuestionsElement = document.getElementById('home-subject-questions');
+    if (statistics && statistics.total) {
+        subjectQuestionsElement.textContent = statistics.total + ' 题';
+    } else {
+        subjectQuestionsElement.textContent = '--';
+    }
     
     // 使用已计算的统计数据更新题型按钮上的题目数量
     document.getElementById('single-count').textContent = (statistics.single_choice || 0) + ' 题';
@@ -1339,6 +1645,13 @@ function startPractice(type) {
     document.getElementById('welcome-section').classList.add('hidden');
     document.getElementById('question-type-section').classList.add('hidden');
     document.getElementById('question-section').classList.remove('hidden');
+    toggleMobileFavoriteButton(true);
+    
+    // 移动端隐藏底部导航栏
+    if (window.innerWidth <= 768) {
+        const mobileBottomNav = document.querySelector('.mobile-bottom-nav');
+        if (mobileBottomNav) mobileBottomNav.style.display = 'none';
+    }
     
     showQuestion();
     updateStatusDisplay();
@@ -1374,6 +1687,13 @@ function startMockExam() {
     document.getElementById('welcome-section').classList.add('hidden');
     document.getElementById('question-type-section').classList.add('hidden');
     document.getElementById('question-section').classList.remove('hidden');
+    toggleMobileFavoriteButton(true);
+    
+    // 移动端隐藏底部导航栏
+    if (window.innerWidth <= 768) {
+        const mobileBottomNav = document.querySelector('.mobile-bottom-nav');
+        if (mobileBottomNav) mobileBottomNav.style.display = 'none';
+    }
     
     showQuestion();
     updateStatusDisplay();
@@ -2084,6 +2404,15 @@ function updateFavoriteButton() {
         icon.className = 'far fa-star';
         button.classList.remove('favorited');
     }
+    
+    // 同步移动端悬浮按钮状态
+    const mobileBtn = document.getElementById('mobile-favorite-float-btn');
+    if (mobileBtn && window.innerWidth <= 768) {
+        const mobileIcon = mobileBtn.querySelector('i');
+        if (mobileIcon) {
+            mobileIcon.className = isFavorited ? 'fas fa-star' : 'far fa-star';
+        }
+    }
 }
 
 
@@ -2099,6 +2428,19 @@ function returnToHome() {
     document.getElementById('question-section').classList.add('hidden');
     document.getElementById('welcome-section').classList.remove('hidden');
     document.getElementById('question-type-section').classList.remove('hidden');
+    
+    // 强制隐藏移动端悬浮按钮
+    const mobileFloatBtn = document.getElementById('mobile-favorite-float-btn');
+    const mobileHomeBtn = document.getElementById('mobile-home-float-btn');
+    if (mobileFloatBtn) mobileFloatBtn.style.display = 'none';
+    if (mobileHomeBtn) mobileHomeBtn.style.display = 'none';
+    
+    // 移动端恢复显示底部导航栏
+    if (window.innerWidth <= 768) {
+        const mobileBottomNav = document.querySelector('.mobile-bottom-nav');
+        if (mobileBottomNav) mobileBottomNav.style.display = 'flex';
+    }
+    
 //    提交按钮可用
     document.getElementById('submit-btn').disabled = false;
     
@@ -2227,8 +2569,25 @@ function showQuestionNumberModal() {
         // 设置题号状态样式
         if (i === currentQuestionIndex) {
             btn.classList.add('current'); // 当前题目
+        } else if (isReviewMode || (isExamMode && judgedAnswers[i])) {
+            // 查看详情模式或考试已判分状态：显示对错状态
+            const userAnswer = userAnswers[i];
+            const question = currentQuestions[i];
+            
+            if (userAnswer === null || userAnswer === '') {
+                // 未作答：白色（默认样式）
+            } else {
+                const correctAnswer = question.correctAnswer.trim().toUpperCase();
+                const userAnswerUpper = userAnswer.toString().trim().toUpperCase();
+                
+                if (userAnswerUpper === correctAnswer) {
+                    btn.classList.add('correct'); // 答对：绿色
+                } else {
+                    btn.classList.add('wrong'); // 答错：红色
+                }
+            }
         } else if (isExamMode) {
-            // 考试模式下：只区分已作答（蓝色）和未作答（默认）
+            // 考试模式下（未交卷）：只区分已作答（蓝色）和未作答
             if (userAnswers[i] !== null && userAnswers[i] !== '') {
                 btn.classList.add('answered'); // 已作答（蓝色）
             }
@@ -3043,6 +3402,13 @@ function startConfiguredExam() {
     document.getElementById('welcome-section').classList.add('hidden');
     document.getElementById('question-type-section').classList.add('hidden');
     document.getElementById('question-section').classList.remove('hidden');
+    toggleMobileFavoriteButton(true);
+    
+    // 移动端隐藏底部导航栏
+    if (window.innerWidth <= 768) {
+        const mobileBottomNav = document.querySelector('.mobile-bottom-nav');
+        if (mobileBottomNav) mobileBottomNav.style.display = 'none';
+    }
     
     // 在考试模式下隐藏顶部的所有导航按钮
     document.getElementById('home-btn').style.display = 'none';
@@ -3252,6 +3618,13 @@ function practiceWrongQuestion(type, index) {
     document.getElementById('welcome-section').classList.add('hidden');
     document.getElementById('question-type-section').classList.add('hidden');
     document.getElementById('question-section').classList.remove('hidden');
+    toggleMobileFavoriteButton(true);
+    
+    // 移动端隐藏底部导航栏
+    if (window.innerWidth <= 768) {
+        const mobileBottomNav = document.querySelector('.mobile-bottom-nav');
+        if (mobileBottomNav) mobileBottomNav.style.display = 'none';
+    }
     
     showQuestion();
     updateStatusDisplay();
@@ -3426,6 +3799,13 @@ function practiceFavoriteQuestion(type, index) {
     document.getElementById('welcome-section').classList.add('hidden');
     document.getElementById('question-type-section').classList.add('hidden');
     document.getElementById('question-section').classList.remove('hidden');
+    toggleMobileFavoriteButton(true);
+    
+    // 移动端隐藏底部导航栏
+    if (window.innerWidth <= 768) {
+        const mobileBottomNav = document.querySelector('.mobile-bottom-nav');
+        if (mobileBottomNav) mobileBottomNav.style.display = 'none';
+    }
     
     showQuestion();
     updateStatusDisplay();
@@ -3564,6 +3944,9 @@ function reviewExamDetails() {
     isReviewMode = true;
     // 提交按钮不可用
     document.getElementById('submit-btn').disabled = true;
+    
+    // 更新移动端悬浮按钮（交卷变成首页）
+    toggleMobileFavoriteButton(true);
    
 
     
@@ -3753,6 +4136,7 @@ function startMembershipStatusCheck() {
             } catch (error) {
                 console.error('定期会员时间检查失败:', error);
             }
+            //设备检查时间
         }, 10 * 60 * 1000); // 10分钟
     }
 }
@@ -3882,6 +4266,8 @@ function showCloudSyncConfirmDialog() {
 // 🔄 执行云同步
 async function performCloudSync() {
     try {
+       
+        
         showMessage('正在同步数据到云端...', 'info');
         
         // 检查是否有数据需要同步
@@ -3891,12 +4277,20 @@ async function performCloudSync() {
             return { success: true, message: '无需同步的数据' };
         }
         
-        // 调用后端同步API
-        const syncResult = await window.leanCloudClient.syncLocalDataToCloud({
-            statistics: statistics,
-            favorites: favorites,
+        // 获取所有数据
+        const progressData = getProgressData();
+        const wrongQuestions = getAllWrongQuestions();
+        const favorites = getAllFavorites();
+        const userStats = JSON.parse(localStorage.getItem('exam_user_stats') || '{}');
+        
+       
+        
+        // 使用新的syncDataToCloud方法（使用UserProgressAPI）
+        const syncResult = await window.leanCloudClient.syncDataToCloud({
+            progressData: progressData,
             wrongQuestions: wrongQuestions,
-            progressData: getProgressData()
+            favorites: favorites,
+            userStats: userStats
         });
         
         if (syncResult.success) {
@@ -3913,19 +4307,47 @@ async function performCloudSync() {
     }
 }
 
-// 获取本地进度数据
+// 获取本地进度数据（动态科目 - 扫描localStorage）
 function getProgressData() {
     const progressData = {};
     const questionTypes = ['single_choice', 'multiple_choice', 'true_false', 'fill_blank'];
-    const subjects = ['毛概', '思修', '近代史', '马原'];
     
+    // 扫描localStorage，找出所有科目的进度数据
+    const progressPrefix = 'exam_progress_';
+    const subjects = new Set();
+    
+    // 遍历localStorage，提取所有科目名称
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(progressPrefix)) {
+            const suffix = key.substring(progressPrefix.length);
+            
+            // 尝试匹配每个题型后缀
+            for (const type of questionTypes) {
+                if (suffix.endsWith('_' + type)) {
+                    // 提取科目名（去掉题型后缀）
+                    const subject = suffix.substring(0, suffix.length - type.length - 1);
+                    subjects.add(subject);
+                    break;
+                }
+            }
+        }
+    }
+    
+    // 如果没有找到任何科目，使用enabledSubjects作为后备
+    if (subjects.size === 0 && enabledSubjects.length > 0) {
+        enabledSubjects.forEach(s => subjects.add(s.name));
+    }
+    
+    // 为每个科目读取进度数据
     subjects.forEach(subject => {
         if (!progressData[subject]) {
             progressData[subject] = {};
         }
         
         questionTypes.forEach(type => {
-            const progress = localStorage.getItem(`exam_progress_${subject}_${type}`);
+            const key = `exam_progress_${subject}_${type}`;
+            const progress = localStorage.getItem(key);
             if (progress) {
                 try {
                     progressData[subject][type] = JSON.parse(progress);
@@ -3951,14 +4373,71 @@ function getProgressData() {
         });
     });
     
+
     return progressData;
+}
+
+// 获取所有科目的错题本（扫描localStorage）
+function getAllWrongQuestions() {
+    const allWrongQuestions = {};
+    const wrongPrefix = 'exam_wrong_questions_';
+    
+    // 扫描localStorage
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(wrongPrefix)) {
+            const subject = key.substring(wrongPrefix.length);
+            const data = localStorage.getItem(key);
+            if (data) {
+                try {
+                    allWrongQuestions[subject] = JSON.parse(data);
+                } catch (e) {
+                    console.warn(`解析${subject}错题数据失败:`, e);
+                    allWrongQuestions[subject] = {};
+                }
+            }
+        }
+    }
+    
+
+    return allWrongQuestions;
+}
+
+// 获取所有科目的收藏（扫描localStorage）
+function getAllFavorites() {
+    const allFavorites = {};
+    const favPrefix = 'exam_favorites_';
+    
+    // 扫描localStorage
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(favPrefix)) {
+            const subject = key.substring(favPrefix.length);
+            const data = localStorage.getItem(key);
+            if (data) {
+                try {
+                    allFavorites[subject] = JSON.parse(data);
+                } catch (e) {
+                    console.warn(`解析${subject}收藏数据失败:`, e);
+                    allFavorites[subject] = {};
+                }
+            }
+        }
+    }
+    
+
+    return allFavorites;
 }
 
 // 检查是否有需要同步的本地数据
 function checkLocalDataForSync() {
     const hasStats = statistics && (statistics.totalAnswered > 0 || statistics.totalCorrect > 0);
-    const hasFavorites = favorites && Object.keys(favorites).length > 0;
-    const hasWrongQuestions = wrongQuestions && Object.keys(wrongQuestions).length > 0;
+    
+    // 使用扫描函数检查所有科目的数据
+    const allFavorites = getAllFavorites();
+    const allWrongQuestions = getAllWrongQuestions();
+    const hasFavorites = Object.keys(allFavorites).length > 0;
+    const hasWrongQuestions = Object.keys(allWrongQuestions).length > 0;
     
     const progressData = getProgressData();
     const hasProgress = progressData && Object.keys(progressData).some(subject => {
@@ -4866,6 +5345,94 @@ async function handleChangePassword(e) {
     }
 }
 
+// 显示修改用户名模态框
+function showEditUsernameModal() {
+    if (!currentUser) {
+        showMessage('请先登录', 'warning');
+        return;
+    }
+    
+    // 重置表单并填充当前用户名
+    const form = document.getElementById('edit-username-form');
+    const input = document.getElementById('new-username');
+    form.reset();
+    input.value = currentUser.username || '';
+    
+    document.getElementById('edit-username-modal').classList.remove('hidden');
+    input.focus();
+    // 选中输入框文字方便编辑
+    input.select();
+}
+
+// 隐藏修改用户名模态框
+function hideEditUsernameModal() {
+    document.getElementById('edit-username-modal').classList.add('hidden');
+    document.getElementById('edit-username-form').reset();
+}
+
+// 处理修改用户名表单提交
+async function handleEditUsername(e) {
+    e.preventDefault();
+    
+    const newUsername = document.getElementById('new-username').value.trim();
+    const submitBtn = document.getElementById('submit-edit-username');
+    
+    // 表单验证
+    if (!newUsername) {
+        showMessage('请输入新用户名', 'warning');
+        return;
+    }
+    
+    if (newUsername.length < 2 || newUsername.length > 20) {
+        showMessage('用户名长度应在2-20位之间', 'warning');
+        return;
+    }
+    
+    // 验证用户名格式（字母、数字、下划线、中文）
+    if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(newUsername)) {
+        showMessage('用户名只能包含字母、数字、下划线和中文', 'warning');
+        return;
+    }
+    
+    if (newUsername === currentUser.username) {
+        showMessage('新用户名与当前用户名相同', 'warning');
+        return;
+    }
+    
+    // 禁用提交按钮
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 修改中...';
+    
+    try {
+        showMessage('正在修改用户名...', 'info');
+        
+        const result = await window.leanCloudClient.updateUsername(newUsername);
+        
+        if (result.success) {
+            // 更新本地用户信息
+            currentUser.username = newUsername;
+            localStorage.setItem('examUser', JSON.stringify(currentUser));
+            
+            // 更新UI显示
+            updateUserInterface();
+            updateStatisticsDisplay();
+            
+            showMessage('用户名修改成功！', 'success');
+            hideEditUsernameModal();
+        } else {
+            showMessage(result.message, 'error');
+        }
+        
+    } catch (error) {
+        console.error('修改用户名失败:', error);
+        showMessage('修改用户名失败，请稍后重试', 'error');
+    } finally {
+        // 恢复提交按钮
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-save"></i> 确认修改';
+    }
+}
+
 // 处理CDK激活
 async function handleCDKActivation() {
     const cdkInput = document.getElementById('cdk-input');
@@ -5021,6 +5588,11 @@ function updateUserInterface() {
         // 显示修改密码按钮
         const changePasswordBtn = document.getElementById('change-password-btn');
         if (changePasswordBtn) changePasswordBtn.classList.remove('hidden');
+        
+        // 显示修改用户名按钮
+        const editUsernameBtn = document.getElementById('edit-username-btn');
+        if (editUsernameBtn) editUsernameBtn.classList.remove('hidden');
+        
         if (membershipBtn) membershipBtn.classList.remove('hidden');
         if (importBtn) importBtn.disabled = false;
         if (syncBtn) syncBtn.disabled = false;
@@ -5041,6 +5613,11 @@ function updateUserInterface() {
         // 隐藏修改密码按钮
         const changePasswordBtn = document.getElementById('change-password-btn');
         if (changePasswordBtn) changePasswordBtn.classList.add('hidden');
+        
+        // 隐藏修改用户名按钮
+        const editUsernameBtn = document.getElementById('edit-username-btn');
+        if (editUsernameBtn) editUsernameBtn.classList.add('hidden');
+        
         if (membershipBtn) membershipBtn.classList.add('hidden');
         if (importBtn) importBtn.disabled = true;
         if (syncBtn) syncBtn.disabled = true;
@@ -5251,74 +5828,8 @@ async function importDataFromCloud() {
 }
 
 // 获取指定科目的进度数据
-function getProgressData(subject) {
-    const progressData = {};
-    const questionTypes = ['single_choice', 'multiple_choice', 'true_false', 'fill_blank'];
-    const subjects = ['毛概', '思修', '近代史', '马原'];
-    
-    // 如果指定了科目，只获取该科目的进度数据
-    if (subject) {
-        const subjectKey = subject;
-        progressData[subjectKey] = {};
-        questionTypes.forEach(type => {
-            const progress = localStorage.getItem(`exam_progress_${subjectKey}_${type}`);
-            if (progress) {
-                try {
-                    progressData[subjectKey][type] = JSON.parse(progress);
-                } catch (e) {
-                    console.warn(`解析${type}进度数据失败:`, e);
-                    progressData[subjectKey][type] = {
-                        currentIndex: 0,
-                        userAnswers: [],
-                        judgedAnswers: [],
-                        detailedProgress: [],
-                        timestamp: Date.now()
-                    };
-                }
-            } else {
-                progressData[subjectKey][type] = {
-                    currentIndex: 0,
-                    userAnswers: [],
-                    judgedAnswers: [],
-                    detailedProgress: [],
-                    timestamp: Date.now()
-                };
-            }
-        });
-    } else {
-        // 如果没有指定科目，获取所有科目的进度数据
-        subjects.forEach(subjectKey => {
-            progressData[subjectKey] = {};
-            questionTypes.forEach(type => {
-                const progress = localStorage.getItem(`exam_progress_${subjectKey}_${type}`);
-                if (progress) {
-                    try {
-                        progressData[subjectKey][type] = JSON.parse(progress);
-                    } catch (e) {
-                        console.warn(`解析${subjectKey}_${type}进度数据失败:`, e);
-                        progressData[subjectKey][type] = {
-                            currentIndex: 0,
-                            userAnswers: [],
-                            judgedAnswers: [],
-                            detailedProgress: [],
-                            timestamp: Date.now()
-                        };
-                    }
-                } else {
-                    progressData[subjectKey][type] = {
-                        currentIndex: 0,
-                        userAnswers: [],
-                        judgedAnswers: [],
-                        detailedProgress: [],
-                        timestamp: Date.now()
-                    };
-                }
-            });
-        });
-    }
-    
-    return progressData;
-}
+// 注意：此函数已被合并到上面的getProgressData()函数，此处删除以避免重复定义
+// function getProgressData(subject) { ... }
 
 // 同步数据到云端（支持按科目同步）
 async function syncDataToCloud(subject) {
@@ -5334,20 +5845,9 @@ async function syncDataToCloud(subject) {
     showLoading('正在同步数据...');
     
     try {
-        // 获取按科目存储的错题本和收藏数据
-        const subjects = ['毛概', '思修', '近代史', '马原'];
-        let syncWrongQuestions = {};
-        let syncFavorites = {};
-        
-        subjects.forEach(subjectKey => {
-            const wrongKey = `exam_wrong_questions_${subjectKey}`;
-            const favKey = `exam_favorites_${subjectKey}`;
-            
-            syncWrongQuestions[subjectKey] = JSON.parse(localStorage.getItem(wrongKey) || '{}');
-            syncFavorites[subjectKey] = JSON.parse(localStorage.getItem(favKey) || '{}');
-        });
-        
-        // 获取所有科目的进度数据
+        // 使用扫描函数获取所有科目的数据（支持动态科目）
+        const syncWrongQuestions = getAllWrongQuestions();
+        const syncFavorites = getAllFavorites();
         const progressData = getProgressData();
         
         const localData = {
@@ -5539,24 +6039,54 @@ function resetUserRecords() {
 
 // ========== 科目管理功能 ==========
 
-// 科目映射
-const SUBJECT_CATEGORIES = {
+// 科目映射（动态从 SubjectAPI 加载）
+let SUBJECT_CATEGORIES = {
     '毛概': '毛概',
     '思修': '思修', 
     '近代史': '近代史',
     '马原': '马原'
 };
 
+// 从 SubjectAPI 加载科目映射
+async function loadSubjectCategories() {
+    try {
+        // 使用 leanCloudClient 的 enabledSubjects（而不是 subjectAPI）
+        if (window.leanCloudClient && window.leanCloudClient.enabledSubjects) {
+            const subjects = window.leanCloudClient.enabledSubjects;
+            SUBJECT_CATEGORIES = {};
+            subjects.forEach(subject => {
+                SUBJECT_CATEGORIES[subject.name] = subject.displayName || subject.name;
+            });
+          
+        }
+    } catch (error) {
+        console.error('加载科目映射失败:', error);
+    }
+}
+
 // 加载当前科目选择
 function loadCurrentSubject() {
     const savedSubject = localStorage.getItem('exam_current_subject');
-    if (savedSubject && SUBJECT_CATEGORIES[savedSubject]) {
+    
+    // 检查保存的科目是否在当前启用的科目列表中
+    let isValidSubject = false;
+    if (savedSubject && enabledSubjects && enabledSubjects.length > 0) {
+        isValidSubject = enabledSubjects.some(s => s.name === savedSubject);
+    }
+    
+    if (savedSubject && isValidSubject) {
         currentSubject = savedSubject;
         updateSubjectDisplay();
+     
     } else {
-        // 没有保存的科目，为未登录用户设置默认值但不存储
-        currentSubject = '毛概'; // 默认科目
+        // 没有保存的科目或科目已被禁用，选择第一个启用的科目
+        if (enabledSubjects && enabledSubjects.length > 0) {
+            currentSubject = enabledSubjects[0].name;
+        } else {
+            currentSubject = '毛概'; // 预设默认值
+        }
         updateSubjectDisplay();
+        console.log('ℹ️ 使用默认科目:', currentSubject);
     }
 }
 
@@ -5570,8 +6100,9 @@ function saveCurrentSubject(subject) {
 // 更新科目显示
 function updateSubjectDisplay() {
     const subjectText = document.getElementById('current-subject-text');
-    if (subjectText && currentSubject && SUBJECT_CATEGORIES[currentSubject]) {
-        subjectText.textContent = SUBJECT_CATEGORIES[currentSubject];
+    if (subjectText && currentSubject) {
+        // 直接显示科目名称（name），而不是 displayName
+        subjectText.textContent = currentSubject;
     }
 }
 
@@ -5594,13 +6125,22 @@ function filterQuestionsBySubject() {
 
 // 获取各科目的题目数量统计
 function getSubjectStatistics() {
-    const stats = {
-        '毛概': 0,
-        '思修': 0,
-        '近代史': 0,
-        '马原': 0
-    };
+    const stats = {};
     
+    // 从 enabledSubjects 全局变量获取启用的科目列表
+    if (enabledSubjects && enabledSubjects.length > 0) {
+        enabledSubjects.forEach(subject => {
+            stats[subject.name] = 0;
+        });
+    } else {
+        // 预设默认科目
+        stats['毛概'] = 0;
+        stats['思修'] = 0;
+        stats['近代史'] = 0;
+        stats['马原'] = 0;
+    }
+    
+    // 统计各科目题目数量
     Object.keys(allQuestionsData).forEach(type => {
         allQuestionsData[type].forEach(question => {
             if (question.category && stats[question.category] !== undefined) {
@@ -5634,6 +6174,9 @@ function showSubjectSelectorModal(isRequired = false) {
     const modal = document.getElementById('subject-selector-modal');
     const closeBtn = document.getElementById('close-subject-selector');
     
+    // 动态生成科目选项
+    renderSubjectOptions();
+    
     // 更新题目数量统计
     updateSubjectCounts();
     
@@ -5641,8 +6184,10 @@ function showSubjectSelectorModal(isRequired = false) {
     if (currentSubject) {
         setSelectedSubject(currentSubject);
     } else {
-        // 如果没有当前科目，默认选择第一个
-        setSelectedSubject('毛概');
+        // 如果没有当前科目，默认选择第一个启用的科目
+        if (enabledSubjects && enabledSubjects.length > 0) {
+            setSelectedSubject(enabledSubjects[0].name);
+        }
     }
     
     // 根据是否必需设置关闭按钮的显示状态
@@ -5658,6 +6203,38 @@ function showSubjectSelectorModal(isRequired = false) {
     modal.classList.remove('hidden');
 }
 
+// 动态渲染科目选项
+function renderSubjectOptions() {
+    const container = document.querySelector('.subject-options');
+    if (!container) return;
+    
+    // 清空现有选项
+    container.innerHTML = '';
+    
+    // 使用全局变量 enabledSubjects
+    if (enabledSubjects && enabledSubjects.length > 0) {
+        enabledSubjects.forEach(subject => {
+            const option = document.createElement('div');
+            option.className = 'subject-option';
+            option.setAttribute('data-subject', subject.name);
+            
+            const subjectId = getSubjectId(subject.name);
+            
+            option.innerHTML = `
+                <div class="subject-icon">${subject.icon || '📚'}</div>
+                <div class="subject-info">
+                    <h3>${subject.name}</h3>
+                    <p>${subject.displayName || subject.name}</p>
+                    <span class="subject-count" id="${subjectId}-count">-- 题</span>
+                </div>
+            `;
+            
+            container.appendChild(option);
+        });
+        
+    }
+}
+
 // 隐藏科目选择模态框
 function hideSubjectSelectorModal() {
     document.getElementById('subject-selector-modal').classList.add('hidden');
@@ -5667,10 +6244,40 @@ function hideSubjectSelectorModal() {
 function updateSubjectCounts() {
     const stats = getSubjectStatistics();
     
-    document.getElementById('maogai-count').textContent = `${stats['毛概']} 题`;
-    document.getElementById('sixiu-count').textContent = `${stats['思修']} 题`;
-    document.getElementById('jindaishi-count').textContent = `${stats['近代史']} 题`;
-    document.getElementById('mayuan-count').textContent = `${stats['马原']} 题`;
+    // 动态更新每个科目的题目数量
+    if (enabledSubjects && enabledSubjects.length > 0) {
+        enabledSubjects.forEach(subject => {
+            // 生成科目 ID（将中文科目名转换为 ID）
+            const subjectId = getSubjectId(subject.name);
+            const countElement = document.getElementById(`${subjectId}-count`);
+            if (countElement) {
+                countElement.textContent = `${stats[subject.name] || 0} 题`;
+            }
+        });
+    } else {
+        // 预设默认科目（向下兼容）
+        const maogaiCount = document.getElementById('maogai-count');
+        const sixiuCount = document.getElementById('sixiu-count');
+        const jindaishiCount = document.getElementById('jindaishi-count');
+        const mayuanCount = document.getElementById('mayuan-count');
+        
+        if (maogaiCount) maogaiCount.textContent = `${stats['毛概'] || 0} 题`;
+        if (sixiuCount) sixiuCount.textContent = `${stats['思修'] || 0} 题`;
+        if (jindaishiCount) jindaishiCount.textContent = `${stats['近代史'] || 0} 题`;
+        if (mayuanCount) mayuanCount.textContent = `${stats['马原'] || 0} 题`;
+    }
+}
+
+// 根据科目名生成 ID（用于 DOM 元素）
+function getSubjectId(subjectName) {
+    const idMap = {
+        '毛概': 'maogai',
+        '思修': 'sixiu',
+        '近代史': 'jindaishi',
+        '马原': 'mayuan',
+        'qun': 'qun'  // 示例：群论
+    };
+    return idMap[subjectName] || subjectName.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 // 设置选中的科目
@@ -5737,8 +6344,9 @@ function confirmSubjectSelection() {
     // 隐藏模态框
     hideSubjectSelectorModal();
     
-    // 显示成功消息
-    showMessage(`已切换到：${SUBJECT_CATEGORIES[newSubject]}`, 'success');
+    // 显示成功消息（使用 displayName）
+    const displayName = SUBJECT_CATEGORIES[newSubject] || newSubject;
+    showMessage(`已切换到：${displayName}`, 'success');
 }
 
 // 检查是否需要显示科目选择（用户登录后）
@@ -5748,9 +6356,16 @@ function checkSubjectSelection() {
         return false; // 未登录用户不需要选择
     }
     
-    // 如果没有保存的科目选择，必须显示科目选择模态框
+    // 检查保存的科目是否有效
     const savedSubject = localStorage.getItem('exam_current_subject');
-    if (!savedSubject || !SUBJECT_CATEGORIES[savedSubject]) {
+    let isValidSubject = false;
+    
+    if (savedSubject && enabledSubjects && enabledSubjects.length > 0) {
+        isValidSubject = enabledSubjects.some(s => s.name === savedSubject);
+    }
+    
+    // 如果没有保存的科目或科目已被禁用，必须显示科目选择模态框
+    if (!savedSubject || !isValidSubject) {
         setTimeout(() => {
             showSubjectSelectorModal(true); // 传入true表示必须选择
             showMessage('请选择您要学习的科目类型', 'info');
