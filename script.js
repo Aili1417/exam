@@ -370,9 +370,19 @@ function initEventListeners() {
         e.preventDefault();
         showLoginForm();
     });
+    document.getElementById('show-forgot-password').addEventListener('click', (e) => {
+        e.preventDefault();
+        showForgotPasswordModal();
+    });
     document.getElementById('login-form').addEventListener('submit', handleLogin);
     document.getElementById('register-form').addEventListener('submit', handleRegister);
     document.getElementById('send-code-btn').addEventListener('click', handleSendVerificationCode);
+    
+    // 忘记密码相关事件
+    document.getElementById('close-forgot-password').addEventListener('click', hideForgotPasswordModal);
+    document.getElementById('cancel-forgot-password').addEventListener('click', hideForgotPasswordModal);
+    document.getElementById('send-reset-code-btn').addEventListener('click', handleSendResetCode);
+    document.getElementById('forgot-password-form').addEventListener('submit', handleResetPassword);
     
     // 邮箱组合功能
     document.getElementById('register-username').addEventListener('input', updateEmailAddress);
@@ -4768,6 +4778,8 @@ function hideAuthModal() {
     // 重置表单
     document.getElementById('login-form').reset();
     document.getElementById('register-form').reset();
+    // 重置为登录表单状态，避免下次打开时显示错误的表单
+    showLoginForm();
 }
 
 // 显示用户中心模态框
@@ -5035,6 +5047,27 @@ function startCodeCountdown() {
     }, 1000);
 }
 
+// 重置密码验证码倒计时
+function startResetCodeCountdown() {
+    const sendBtn = document.getElementById('send-reset-code-btn');
+    let countdown = 60;
+    
+    sendBtn.disabled = true;
+    sendBtn.classList.add('countdown');
+    
+    const timer = setInterval(() => {
+        sendBtn.textContent = `${countdown}秒后重发`;
+        countdown--;
+        
+        if (countdown < 0) {
+            clearInterval(timer);
+            sendBtn.disabled = false;
+            sendBtn.textContent = '发送验证码';
+            sendBtn.classList.remove('countdown');
+        }
+    }, 1000);
+}
+
 // 处理注册（使用验证码）
 async function handleRegister(e) {
     e.preventDefault();
@@ -5123,6 +5156,167 @@ async function handleRegister(e) {
         showMessage('注册失败，请重试', 'error');
     } finally {
         hideLoading();
+    }
+}
+
+// ========== 忘记密码功能 ==========
+
+// 显示忘记密码模态框
+function showForgotPasswordModal() {
+    // 隐藏登录模态框
+    hideAuthModal();
+    
+    // 重置忘记密码表单
+    document.getElementById('forgot-password-form').reset();
+    
+    // 显示忘记密码模态框
+    document.getElementById('forgot-password-modal').classList.remove('hidden');
+    
+    // 聚焦到邮箱输入框
+    document.getElementById('forgot-email').focus();
+}
+
+// 隐藏忘记密码模态框
+function hideForgotPasswordModal() {
+    document.getElementById('forgot-password-modal').classList.add('hidden');
+    document.getElementById('forgot-password-form').reset();
+}
+
+// 发送重置密码验证码
+async function handleSendResetCode() {
+    const email = document.getElementById('forgot-email').value.trim();
+    const sendBtn = document.getElementById('send-reset-code-btn');
+    
+    // 防止重复点击
+    if (sendBtn.disabled) {
+        return;
+    }
+    
+    if (!email) {
+        showMessage('请输入邮箱地址', 'error');
+        document.getElementById('forgot-email').focus();
+        return;
+    }
+    
+    // 验证邮箱格式
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showMessage('邮箱格式不正确', 'error');
+        document.getElementById('forgot-email').focus();
+        return;
+    }
+    
+    // 禁用按钮并显示加载状态
+    sendBtn.disabled = true;
+    sendBtn.textContent = '发送中...';
+    
+    try {
+        const result = await window.leanCloudClient.sendResetPasswordCode(email);
+        
+        if (result.success) {
+            showMessage(result.message, 'success');
+            // 开始倒计时
+            startResetCodeCountdown();
+        } else {
+            showMessage(result.message, 'error');
+            // 恢复按钮状态
+            sendBtn.disabled = false;
+            sendBtn.textContent = '发送验证码';
+        }
+    } catch (error) {
+        console.error('发送重置密码验证码失败:', error);
+        showMessage('发送验证码失败，请重试', 'error');
+        // 恢复按钮状态
+        sendBtn.disabled = false;
+        sendBtn.textContent = '发送验证码';
+    }
+}
+
+// 处理密码重置
+async function handleResetPassword(e) {
+    e.preventDefault();
+    
+    const email = document.getElementById('forgot-email').value.trim();
+    const code = document.getElementById('forgot-verification-code').value.trim();
+    const newPassword = document.getElementById('forgot-new-password').value;
+    const confirmPassword = document.getElementById('forgot-confirm-password').value;
+    const submitBtn = document.getElementById('submit-reset-password');
+    
+    // 表单验证
+    if (!email) {
+        showMessage('请输入邮箱地址', 'error');
+        document.getElementById('forgot-email').focus();
+        return;
+    }
+    
+    if (!code) {
+        showMessage('请输入验证码', 'error');
+        document.getElementById('forgot-verification-code').focus();
+        return;
+    }
+    
+    if (!newPassword) {
+        showMessage('请输入新密码', 'error');
+        document.getElementById('forgot-new-password').focus();
+        return;
+    }
+    
+    if (newPassword.length < 6) {
+        showMessage('密码长度至少6位', 'error');
+        document.getElementById('forgot-new-password').focus();
+        return;
+    }
+    
+    if (!confirmPassword) {
+        showMessage('请确认新密码', 'error');
+        document.getElementById('forgot-confirm-password').focus();
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        showMessage('两次输入的密码不一致', 'error');
+        return;
+    }
+    
+    // 验证验证码格式
+    if (!/^\d{6}$/.test(code)) {
+        showMessage('验证码格式不正确，请输入6位数字', 'error');
+        document.getElementById('forgot-verification-code').focus();
+        return;
+    }
+    
+    // 禁用提交按钮
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 重置中...';
+    
+    showLoading('正在重置密码...');
+    
+    try {
+        const result = await window.leanCloudClient.resetPassword(email, code, newPassword);
+        
+        if (result.success) {
+            showMessage('密码重置成功！请使用新密码登录', 'success');
+            
+            // 关闭忘记密码模态框
+            hideForgotPasswordModal();
+            
+            // 打开登录模态框并自动填入邮箱
+            setTimeout(() => {
+                showAuthModal();
+                document.getElementById('login-email').value = email;
+                document.getElementById('login-password').focus();
+            }, 500);
+        } else {
+            showMessage(result.message, 'error');
+        }
+    } catch (error) {
+        console.error('重置密码失败:', error);
+        showMessage('重置密码失败，请重试', 'error');
+    } finally {
+        hideLoading();
+        // 恢复提交按钮
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-check"></i> 确认重置';
     }
 }
 

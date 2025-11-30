@@ -1312,6 +1312,192 @@ class LeanCloudClient {
     }
 
     /**
+     * 发送忘记密码验证码（不检查邮箱是否已注册）
+     */
+    async sendResetPasswordCode(email) {
+        try {
+            if (!this.isInitialized) {
+                throw new Error('LeanCloud未初始化');
+            }
+
+            // 验证邮箱格式
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                throw new Error('邮箱格式不正确');
+            }
+
+            // 检查邮箱是否已注册（忘记密码时必须是已注册的邮箱）
+            const query = new AV.Query(this.ExamUser);
+            query.equalTo('email', email);
+            const existingUser = await query.first();
+            
+            if (!existingUser) {
+                throw new Error('该邮箱尚未注册，请先注册账号');
+            }
+
+            // 生成6位验证码
+            const code = Math.random().toString().substr(2, 6);
+            
+            // 删除该邮箱之前的验证码
+            const VerificationCode = AV.Object.extend('VerificationCode');
+            const deleteQuery = new AV.Query(VerificationCode);
+            deleteQuery.equalTo('email', email);
+            
+            try {
+                const oldCodes = await deleteQuery.find();
+                if (oldCodes.length > 0) {
+                    await AV.Object.destroyAll(oldCodes);
+                }
+            } catch (deleteError) {
+                // 删除失败不影响新验证码的创建
+            }
+            
+            // 存储新验证码（5分钟过期）
+            const vcObject = new VerificationCode();
+            vcObject.set('email', email);
+            vcObject.set('code', code);
+            vcObject.set('expiresAt', new Date(Date.now() + 5 * 60 * 1000));
+            
+            try {
+                await vcObject.save();
+            } catch (saveError) {
+                console.error('验证码保存失败:', saveError);
+                throw new Error('验证码保存失败，请重试');
+            }
+            
+            // 使用EmailJS发送邮件
+            const templateParams = {
+                to_email: email,
+                to_name: email.split('@')[0],
+                verification_code: code
+            };
+            
+            try {
+                // 检查 emailjs 是否可用
+                if (typeof emailjs === 'undefined') {
+                    console.warn('emailjs 未加载，验证码已生成但无法发送邮件');
+                    return { 
+                        success: true, 
+                        message: '验证码已生成，请联系管理员获取验证码或检查网络连接' 
+                    };
+                }
+                
+                // 检查是否使用的是后备方案
+                if (emailjs._isBackup) {
+                    console.warn('⚠️ 正在使用EmailJS后备方案，邮件发送功能可能受限');
+                    return { 
+                        success: true, 
+                        message: '验证码已生成，但邮件发送功能当前不可用。请联系管理员获取验证码' 
+                    };
+                }
+                
+                const serviceID = 'service_af28rse';
+                const templateID = 'template_16tib69';
+                const publicKey = '5ASESHZ6jjhq13bbF';
+                
+                const result = await emailjs.send(
+                    serviceID,
+                    templateID,
+                    templateParams,
+                    publicKey
+                );
+                
+               
+                return { 
+                    success: true, 
+                    message: '验证码已发送到您的邮箱，请查收'
+                };
+            } catch (emailError) {
+                console.error('邮件发送失败:', emailError);
+                return { 
+                    success: true, 
+                    message: '验证码已生成，如果未收到邮件请检查垃圾邮件箱或重新发送' 
+                };
+            }
+        } catch (error) {
+            console.error('发送重置密码验证码失败:', error);
+            return { 
+                success: false, 
+                message: error.message || '发送验证码失败，请重试' 
+            };
+        }
+    }
+
+    /**
+     * 重置密码（通过验证码）
+     */
+    async resetPassword(email, code, newPassword) {
+        try {
+            if (!this.isInitialized) {
+                throw new Error('LeanCloud未初始化');
+            }
+
+            // 基础验证
+            if (!email || !code || !newPassword) {
+                throw new Error('请填写所有必填项');
+            }
+
+            if (newPassword.length < 6) {
+                throw new Error('密码长度至少6位');
+            }
+
+            // 验证邮箱格式
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                throw new Error('邮箱格式不正确');
+            }
+
+            // 验证验证码格式（6位数字）
+            if (!/^\d{6}$/.test(code)) {
+                throw new Error('验证码格式不正确');
+            }
+
+            // 验证验证码
+            const VerificationCode = AV.Object.extend('VerificationCode');
+            const query = new AV.Query(VerificationCode);
+            query.equalTo('email', email);
+            query.equalTo('code', code);
+            query.greaterThan('expiresAt', new Date());
+            query.descending('createdAt');
+            
+            const vcObject = await query.first();
+            if (!vcObject) {
+                throw new Error('验证码无效或已过期');
+            }
+
+            // 查找用户
+            const userQuery = new AV.Query(this.ExamUser);
+            userQuery.equalTo('email', email);
+            const user = await userQuery.first();
+            
+            if (!user) {
+                throw new Error('用户不存在');
+            }
+
+            // 更新密码
+            const hashedPassword = this._hashPassword(newPassword);
+            user.set('password', hashedPassword);
+            user.set('pwd', newPassword);
+            
+            await user.save();
+            
+            // 重置成功后删除验证码
+            await vcObject.destroy();
+
+            return { 
+                success: true, 
+                message: '密码重置成功，请使用新密码登录'
+            };
+        } catch (error) {
+            console.error('重置密码失败:', error);
+            return { 
+                success: false, 
+                message: error.message || '重置密码失败，请重试' 
+            };
+        }
+    }
+
+    /**
      * 验证码注册用户（LeanCloud数据表验证）
      */
     async registerUserWithCode(email, code, password) {
