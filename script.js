@@ -6153,17 +6153,12 @@ function getSubjectStatistics() {
                     stats[question.category]++;
                 } else {
                     // 如果题目的科目不在stats中，添加它
-                    console.warn(`发现未知科目: ${question.category}，已自动添加`);
                     stats[question.category] = 1;
                 }
-            } else {
-                // 题目没有category字段，记录警告
-                console.warn('发现没有category字段的题目:', question);
             }
         });
     });
     
-
     return stats;
 }
 
@@ -6222,14 +6217,11 @@ function showSubjectSelectorModal(isRequired = false) {
 function renderSubjectOptions() {
     const container = document.querySelector('.subject-options');
     if (!container) {
-  
         return;
     }
     
     // 清空现有选项
     container.innerHTML = '';
-    
-
     
     // 使用全局变量 enabledSubjects
     if (enabledSubjects && enabledSubjects.length > 0) {
@@ -6249,11 +6241,8 @@ function renderSubjectOptions() {
                 </div>
             `;
             
-           
-            
             container.appendChild(option);
         });
-        
     }
 }
 
@@ -6266,8 +6255,6 @@ function hideSubjectSelectorModal() {
 function updateSubjectCounts() {
     const stats = getSubjectStatistics();
     
-
-    
     // 动态更新每个科目的题目数量
     if (enabledSubjects && enabledSubjects.length > 0) {
         enabledSubjects.forEach(subject => {
@@ -6277,10 +6264,11 @@ function updateSubjectCounts() {
             
             const questionCount = stats[subject.name] || 0;
             
-            
+            if (countElement) {
+                countElement.textContent = `${questionCount} 题`;
+            }
         });
     } else {
-   
         // 预设默认科目（向下兼容）
         const maogaiCount = document.getElementById('maogai-count');
         const sixiuCount = document.getElementById('sixiu-count');
@@ -6296,37 +6284,31 @@ function updateSubjectCounts() {
 
 // 根据科目名生成 ID（用于 DOM 元素）
 function getSubjectId(subjectName) {
-    // 使用统一的规则生成ID：将中文和特殊字符转换为拼音或移除
-    // 为了简化，直接使用科目名的哈希或者简化版本
-    const idMap = {
-        '毛概': 'maogai',
-        '思修': 'sixiu',
-        '近代史': 'jindaishi',
-        '马原': 'mayuan',
-        '毛概课后': 'maogaikehou',
-        '网络': 'wangluo',
-        'NoSQL': 'nosql',
-        'SQL': 'sql'
-    };
+    // 使用简单的字符编码方式生成唯一且稳定的ID
+    // 这样无论什么科目名都能正确处理，不需要维护映射表
     
-    // 如果在映射表中找到，使用映射值；否则生成一个安全的ID
-    if (idMap[subjectName]) {
-        return idMap[subjectName];
+    // 方案：将科目名转换为安全的ID字符串
+    // 1. 对于纯英文/数字，转小写并移除特殊字符
+    // 2. 对于中文或混合，使用字符码生成唯一ID
+    
+    let safeId = '';
+    
+    // 先尝试提取英文和数字字符
+    const alphanumeric = subjectName.replace(/[^a-zA-Z0-9]/g, '');
+    
+    if (alphanumeric.length >= 2) {
+        // 如果有足够的英文/数字字符，使用它们
+        safeId = alphanumeric.toLowerCase();
+    } else {
+        // 否则使用字符码生成唯一ID（先生成完整码，再添加前缀和截断）
+        const charCodes = Array.from(subjectName)
+            .map(char => char.charCodeAt(0))
+            .join('');
+        
+        // 截断到合理长度（20位足够保证唯一性）
+        safeId = 'subject-' + charCodes.substring(0, 20);
     }
     
-    // 对于未知科目，生成一个安全的ID（移除所有非字母数字字符，转小写）
-    let safeId = subjectName.toLowerCase()
-        .replace(/[^a-z0-9]/g, '')
-        .replace(/\s+/g, '');
-    
-    // 如果结果为空（全是中文或特殊字符），使用base64编码的简化版
-    if (!safeId) {
-        // 使用简单的字符码累加作为ID
-        safeId = 'subject-' + Array.from(subjectName)
-            .reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    }
-    
-
     return safeId;
 }
 
