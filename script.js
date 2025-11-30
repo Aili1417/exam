@@ -692,15 +692,10 @@ async function loadQuestionsFromCloud() {
         // result.data 是按题型分组的数据（兼容旧结构）
         // result.dataBySubject 是按科目分组的数据（新结构）
         
-        // 保存所有题目数据（按题型分组，未过滤）
-        allQuestionsData = {};
-        const allQuestions = Object.values(result.data).flat();
-        allQuestions.forEach(question => {
-            if (!allQuestionsData[question.type]) {
-                allQuestionsData[question.type] = [];
-            }
-            allQuestionsData[question.type].push(question);
-        });
+        // 直接使用result.data，它已经按题型分组了
+        allQuestionsData = result.data;
+        
+     
         
         // 加载保存的科目选择
         loadCurrentSubject();
@@ -708,7 +703,11 @@ async function loadQuestionsFromCloud() {
         // 根据当前科目过滤题目数据
         filterQuestionsBySubject();
 
-        updateStatus(`已加载 ${allQuestions.length} 个题目`, 'success');
+        const totalQuestions = (allQuestionsData.single_choice?.length || 0) + 
+                              (allQuestionsData.multiple_choice?.length || 0) + 
+                              (allQuestionsData.true_false?.length || 0) + 
+                              (allQuestionsData.fill_blank?.length || 0);
+        updateStatus(`已加载 ${totalQuestions} 个题目`, 'success');
         
         // 立即从加载的数据中计算统计信息，避免后续的重复计算和请求
         calculateStatisticsFromData();
@@ -728,6 +727,8 @@ function calculateStatisticsFromData() {
         const trueFalseCount = questionsData.true_false ? questionsData.true_false.length : 0;
         const fillBlankCount = questionsData.fill_blank ? questionsData.fill_blank.length : 0;
         const totalCount = singleChoiceCount + multipleChoiceCount + trueFalseCount + fillBlankCount;
+        
+      
         
         // 更新全局统计对象
         statistics.total = totalCount;
@@ -6142,13 +6143,27 @@ function getSubjectStatistics() {
     
     // 统计各科目题目数量
     Object.keys(allQuestionsData).forEach(type => {
+        if (!allQuestionsData[type]) return; // 跳过空题型
+        
         allQuestionsData[type].forEach(question => {
-            if (question.category && stats[question.category] !== undefined) {
-                stats[question.category]++;
+            // 确保题目有 category 字段
+            if (question && question.category) {
+                // 只统计已知科目的题目
+                if (stats[question.category] !== undefined) {
+                    stats[question.category]++;
+                } else {
+                    // 如果题目的科目不在stats中，添加它
+                    console.warn(`发现未知科目: ${question.category}，已自动添加`);
+                    stats[question.category] = 1;
+                }
+            } else {
+                // 题目没有category字段，记录警告
+                console.warn('发现没有category字段的题目:', question);
             }
         });
     });
     
+
     return stats;
 }
 
@@ -6206,10 +6221,15 @@ function showSubjectSelectorModal(isRequired = false) {
 // 动态渲染科目选项
 function renderSubjectOptions() {
     const container = document.querySelector('.subject-options');
-    if (!container) return;
+    if (!container) {
+  
+        return;
+    }
     
     // 清空现有选项
     container.innerHTML = '';
+    
+
     
     // 使用全局变量 enabledSubjects
     if (enabledSubjects && enabledSubjects.length > 0) {
@@ -6229,6 +6249,8 @@ function renderSubjectOptions() {
                 </div>
             `;
             
+           
+            
             container.appendChild(option);
         });
         
@@ -6244,17 +6266,21 @@ function hideSubjectSelectorModal() {
 function updateSubjectCounts() {
     const stats = getSubjectStatistics();
     
+
+    
     // 动态更新每个科目的题目数量
     if (enabledSubjects && enabledSubjects.length > 0) {
         enabledSubjects.forEach(subject => {
             // 生成科目 ID（将中文科目名转换为 ID）
             const subjectId = getSubjectId(subject.name);
             const countElement = document.getElementById(`${subjectId}-count`);
-            if (countElement) {
-                countElement.textContent = `${stats[subject.name] || 0} 题`;
-            }
+            
+            const questionCount = stats[subject.name] || 0;
+            
+            
         });
     } else {
+   
         // 预设默认科目（向下兼容）
         const maogaiCount = document.getElementById('maogai-count');
         const sixiuCount = document.getElementById('sixiu-count');
@@ -6270,14 +6296,38 @@ function updateSubjectCounts() {
 
 // 根据科目名生成 ID（用于 DOM 元素）
 function getSubjectId(subjectName) {
+    // 使用统一的规则生成ID：将中文和特殊字符转换为拼音或移除
+    // 为了简化，直接使用科目名的哈希或者简化版本
     const idMap = {
         '毛概': 'maogai',
         '思修': 'sixiu',
         '近代史': 'jindaishi',
         '马原': 'mayuan',
-        'qun': 'qun'  // 示例：群论
+        '毛概课后': 'maogaikehou',
+        '网络': 'wangluo',
+        'NoSQL': 'nosql',
+        'SQL': 'sql'
     };
-    return idMap[subjectName] || subjectName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    
+    // 如果在映射表中找到，使用映射值；否则生成一个安全的ID
+    if (idMap[subjectName]) {
+        return idMap[subjectName];
+    }
+    
+    // 对于未知科目，生成一个安全的ID（移除所有非字母数字字符，转小写）
+    let safeId = subjectName.toLowerCase()
+        .replace(/[^a-z0-9]/g, '')
+        .replace(/\s+/g, '');
+    
+    // 如果结果为空（全是中文或特殊字符），使用base64编码的简化版
+    if (!safeId) {
+        // 使用简单的字符码累加作为ID
+        safeId = 'subject-' + Array.from(subjectName)
+            .reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    }
+    
+
+    return safeId;
 }
 
 // 设置选中的科目
