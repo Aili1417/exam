@@ -1642,47 +1642,38 @@ class LeanCloudClient {
                 // 获取当前时间（东八区）
                 const now = new Date();
                 
-                // 如果用户已经是同类型的会员，则在现有结束时间基础上延长
+                // 根据originalUnit字段确定时间单位
+                const originalUnit = cdkObject.get('originalUnit') || 'hours';
+                let timeInMilliseconds = 0;
+                
+                if (originalUnit === 'days') {
+                    // 如果单位是天
+                    timeInMilliseconds = membershipDays * 24 * 60 * 60 * 1000;
+                } else {
+                    // 默认单位是小时
+                    timeInMilliseconds = membershipDays * 60 * 60 * 1000;
+                }
+                
+                // 检查是否是同类型会员续费且会员未过期
                 if (this.currentUser && 
                     this.currentUser.membershipType === membershipType && 
                     this.currentUser.membershipEndTime) {
-                    // 使用现有的开始时间
-                    membershipStartTime = new Date(this.currentUser.membershipStartTime);
                     
-                    // 在现有结束时间基础上增加新的时间
                     const currentEndTime = new Date(this.currentUser.membershipEndTime);
                     
-                    // 根据originalUnit字段确定时间单位
-                    let timeInMilliseconds = 0;
-                    const originalUnit = cdkObject.get('originalUnit') || 'hours';
-                    
-                    if (originalUnit === 'days') {
-                        // 如果单位是天
-                        timeInMilliseconds = membershipDays * 24 * 60 * 60 * 1000;
+                    // 判断会员是否已过期
+                    if (currentEndTime > now) {
+                        // 会员未过期：在现有时间基础上延长
+                        membershipStartTime = new Date(this.currentUser.membershipStartTime);
+                        membershipEndTime = new Date(currentEndTime.getTime() + timeInMilliseconds);
                     } else {
-                        // 默认单位是小时
-                        timeInMilliseconds = membershipDays * 60 * 60 * 1000;
+                        // 会员已过期：重新计算开始时间和结束时间
+                        membershipStartTime = now;
+                        membershipEndTime = new Date(now.getTime() + timeInMilliseconds);
                     }
-                    
-                    // 计算新的结束时间：现有结束时间 + 增加的时间
-                    membershipEndTime = new Date(currentEndTime.getTime() + timeInMilliseconds);
                 } else {
-                    // 新用户或升级用户，使用当前时间作为开始时间
+                    // 新用户或升级用户：使用当前时间作为开始时间
                     membershipStartTime = now;
-                    
-                    // 根据originalUnit字段确定时间单位
-                    let timeInMilliseconds = 0;
-                    const originalUnit = cdkObject.get('originalUnit') || 'hours';
-                    
-                    if (originalUnit === 'days') {
-                        // 如果单位是天
-                        timeInMilliseconds = membershipDays * 24 * 60 * 60 * 1000;
-                    } else {
-                        // 默认单位是小时
-                        timeInMilliseconds = membershipDays * 60 * 60 * 1000;
-                    }
-                    
-                    // 计算结束时间：开始时间 + 时间（根据单位）
                     membershipEndTime = new Date(now.getTime() + timeInMilliseconds);
                 }
                 
