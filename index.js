@@ -1,7 +1,7 @@
 // 版本号校验和会话清理功能
 
 // 当前版本号 - 更新此值以触发会话清理
-const CURRENT_VERSION = "2.1.5";
+const CURRENT_VERSION = "3.1.0";
 
 // 重定向计数器，防止无限循环
 const REDIRECT_COUNT_KEY = "version_check_redirect_count";
