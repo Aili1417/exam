@@ -89,7 +89,7 @@
                 <h1>欢迎使用爱刷题</h1>
                 <p style="text-align: center; color: #f0eded; font-size: 14px; margin-top: -10px; margin-bottom: 20px; opacity: 0.8;">
                     <i class="fas fa-hand-point-down" style="margin-right: 5px;"></i>
-                    往下滑动开始练习
+                    往上滑动开始练习
                 </p>
                 <div class="welcome-content">
                     <div class="welcome-card">
@@ -183,6 +183,9 @@
                             <span id="question-type-label">单选题</span>
                         </div>
                         <div class="question-actions">
+                            <button id="analysis-btn" class="action-btn analysis-btn-desktop" title="查看答案解析" style="display: none;">
+                                <i class="fas fa-lightbulb"></i>
+                            </button>
                             <button id="favorite-btn" class="action-btn" title="收藏题目">
                                 <i class="far fa-star"></i>
                             </button>
@@ -246,6 +249,12 @@
         <button id="mobile-home-float-btn" class="mobile-home-float" style="display: none;">
             <i class="fas fa-home"></i>
             <span>首页</span>
+        </button>
+        
+        <!-- 答案解析悬浮按钮 -->
+        <button id="analysis-float-btn" class="analysis-float" style="display: none;" title="查看答案解析">
+            <i class="fas fa-lightbulb"></i>
+            <span>背题</span>
         </button>
 
         <!-- 底部状态栏 -->

@@ -27,6 +27,7 @@ let statistics = {
 let examTimer = null; // 考试计时器
 let examStartTime = null; // 考试开始时间
 let examDuration = 0; // 考试总时长（分钟）
+let isAnalysisVisible = false; // 答案解析是否可见
 
 // 科目相关变量
 let currentSubject = null; // 当前选择的科目
@@ -552,6 +553,18 @@ function initMobileBottomNav() {
             }
         });
     }
+    
+    // 答案解析悬浮按钮
+    const analysisFloatBtn = document.getElementById('analysis-float-btn');
+    if (analysisFloatBtn) {
+        analysisFloatBtn.addEventListener('click', toggleAnalysis);
+    }
+    
+    // 桌面端背题按钮
+    const analysisDesktopBtn = document.getElementById('analysis-btn');
+    if (analysisDesktopBtn) {
+        analysisDesktopBtn.addEventListener('click', toggleAnalysis);
+    }
 }
 
 // 显示/隐藏移动端悬浮收藏按钮
@@ -559,6 +572,7 @@ function toggleMobileFavoriteButton(show) {
     if (window.innerWidth <= 768) {
         const mobileFloatBtn = document.getElementById('mobile-favorite-float-btn');
         const mobileHomeBtn = document.getElementById('mobile-home-float-btn');
+        const analysisFloatBtn = document.getElementById('analysis-float-btn');
         
         // 在首页时强制隐藏
         const questionSection = document.getElementById('question-section');
@@ -573,6 +587,10 @@ function toggleMobileFavoriteButton(show) {
             if (mobileHomeBtn) {
                 mobileHomeBtn.style.display = 'none';
                 mobileHomeBtn.style.setProperty('display', 'none', 'important');
+            }
+            if (analysisFloatBtn) {
+                analysisFloatBtn.style.display = 'none';
+                analysisFloatBtn.style.setProperty('display', 'none', 'important');
             }
             return;
         }
@@ -609,6 +627,270 @@ function toggleMobileFavoriteButton(show) {
                 }
             }
         }
+        
+        // 处理背题按钮的显示逻辑
+        if (analysisFloatBtn) {
+            // 检查是否已经评题（与showQuestion中的逻辑保持一致）
+            const isJudged = judgedAnswers[currentQuestionIndex] && (!isExamMode || isReviewMode);
+            
+            // 考试模式或已评题时不显示背题按钮
+            if (isJudged || isExamMode || !show) {
+                analysisFloatBtn.style.display = 'none';
+            } else {
+                // 未评题且非考试模式，显示背题按钮
+                analysisFloatBtn.style.display = 'flex';
+            }
+        }
+    }
+}
+
+// 切换答案解析显示/隐藏
+function toggleAnalysis() {
+    const analysisFloatBtn = document.getElementById('analysis-float-btn');
+    const analysisDesktopBtn = document.getElementById('analysis-btn');
+    const feedbackElement = document.getElementById('answer-feedback');
+    
+    if (!currentQuestions || currentQuestions.length === 0 || currentQuestionIndex >= currentQuestions.length) {
+        return;
+    }
+    
+    const currentQuestion = currentQuestions[currentQuestionIndex];
+    
+    if (isAnalysisVisible) {
+        // 隐藏解析
+        hideAnalysis();
+    } else {
+        // 显示解析
+        showAnalysis(currentQuestion);
+    }
+}
+
+// 显示答案解析
+function showAnalysis(question) {
+    const analysisBtn = document.getElementById('analysis-float-btn');
+    const feedbackElement = document.getElementById('answer-feedback');
+    const correctAnswerElement = document.getElementById('correct-answer');
+    const explanationElement = document.getElementById('explanation');
+    const feedbackResult = document.getElementById('feedback-result');
+    const questionSection = document.getElementById('question-section');
+    
+    // 隐藏评题结果（回答正确/错误）
+    if (feedbackResult) {
+        feedbackResult.style.display = 'none';
+    }
+    
+    // 显示解析内容
+    if (correctAnswerElement && question.correctAnswer) {
+        correctAnswerElement.innerHTML = `<strong>正确答案：</strong>${question.correctAnswer}`;
+        correctAnswerElement.style.display = 'block';
+    }
+    
+    if (explanationElement && question.explanation) {
+        explanationElement.innerHTML = `<strong>解析：</strong>${question.explanation}`;
+        explanationElement.style.display = 'block';
+    }
+    
+    // 显示反馈区域
+    if (feedbackElement) {
+        feedbackElement.classList.remove('hidden');
+        // 添加高亮动画效果
+        feedbackElement.style.animation = 'highlightAnalysis 1s ease-out';
+        setTimeout(() => {
+            feedbackElement.style.animation = '';
+        }, 1000);
+    }
+    
+    // 显示正确答案为绿色（像评题结果一样）
+    showCorrectAnswerOptions(question);
+    
+    // 更新按钮状态
+    const analysisFloatBtn = document.getElementById('analysis-float-btn');
+    const analysisDesktopBtn = document.getElementById('analysis-btn');
+    
+    if (analysisFloatBtn) {
+        analysisFloatBtn.classList.add('active');
+        const icon = analysisFloatBtn.querySelector('i');
+        const text = analysisFloatBtn.querySelector('span');
+        if (icon) icon.className = 'fas fa-times';
+        if (text) text.textContent = '关闭';
+    }
+    
+    if (analysisDesktopBtn) {
+        analysisDesktopBtn.classList.add('active');
+        const icon = analysisDesktopBtn.querySelector('i');
+        if (icon) icon.className = 'fas fa-times';
+    }
+    
+    // 禁用做题功能
+    disableQuestionInteraction();
+    
+    // 滑动到解析位置
+    setTimeout(() => {
+        if (feedbackElement) {
+            feedbackElement.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
+    }, 100);
+    
+    // 标记解析为可见
+    isAnalysisVisible = true;
+}
+
+// 显示正确答案选项（绿色高亮）
+function showCorrectAnswerOptions(question) {
+    const questionType = isExamMode ? question._type : currentQuestionType;
+    const correctAnswer = question.correctAnswer.trim().toUpperCase();
+    
+    if (questionType === 'single_choice' || questionType === 'multiple_choice') {
+        const options = document.querySelectorAll('.option');
+        options.forEach(option => {
+            const optionMarker = option.querySelector('.option-marker');
+            const optionText = option.querySelector('.option-text');
+            if (optionMarker && optionText) {
+                const optionLetter = optionMarker.textContent.trim().toUpperCase();
+                // 检查是否是正确答案
+                if (questionType === 'single_choice' && optionLetter === correctAnswer) {
+                    option.classList.add('correct');
+                } else if (questionType === 'multiple_choice') {
+                    // 多选题：检查选项字母是否在正确答案中
+                    if (correctAnswer.includes(optionLetter)) {
+                        option.classList.add('correct');
+                    }
+                }
+            }
+        });
+    } else if (questionType === 'true_false') {
+        const options = document.querySelectorAll('.option');
+        options.forEach((option, index) => {
+            // 判断题：A=正确，B=错误
+            const isCorrect = (correctAnswer === 'A' && index === 0) || (correctAnswer === 'B' && index === 1);
+            if (isCorrect) {
+                option.classList.add('correct');
+            }
+        });
+    }
+}
+
+// 隐藏答案解析
+function hideAnalysis() {
+    const analysisBtn = document.getElementById('analysis-float-btn');
+    const feedbackElement = document.getElementById('answer-feedback');
+    const feedbackResult = document.getElementById('feedback-result');
+    const questionSection = document.getElementById('question-section');
+    
+    // 隐藏反馈区域
+    if (feedbackElement) {
+        feedbackElement.classList.add('hidden');
+    }
+    
+    // 恢复评题结果显示
+    if (feedbackResult) {
+        feedbackResult.style.display = '';
+    }
+    
+    // 恢复按钮状态
+    const analysisFloatBtn = document.getElementById('analysis-float-btn');
+    const analysisDesktopBtn = document.getElementById('analysis-btn');
+    
+    if (analysisFloatBtn) {
+        analysisFloatBtn.classList.remove('active');
+        const icon = analysisFloatBtn.querySelector('i');
+        const text = analysisFloatBtn.querySelector('span');
+        if (icon) icon.className = 'fas fa-lightbulb';
+        if (text) text.textContent = '解析';
+    }
+    
+    if (analysisDesktopBtn) {
+        analysisDesktopBtn.classList.remove('active');
+        const icon = analysisDesktopBtn.querySelector('i');
+        if (icon) icon.className = 'fas fa-lightbulb';
+    }
+    
+    // 清除正确答案的绿色高亮
+    const options = document.querySelectorAll('.option');
+    options.forEach(option => {
+        option.classList.remove('correct');
+    });
+    
+    // 启用做题功能
+    enableQuestionInteraction();
+    
+    // 滑动到题目顶部
+    setTimeout(() => {
+        if (questionSection) {
+            questionSection.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    }, 100);
+    
+    // 标记解析为不可见
+    isAnalysisVisible = false;
+}
+
+// 禁用题目交互（做题和评题功能）
+function disableQuestionInteraction() {
+    // 禁用选项点击但保持正常样式
+    const options = document.querySelectorAll('.option');
+    options.forEach(option => {
+        option.style.pointerEvents = 'none';
+        // 不设置透明度，保持正常显示
+    });
+    
+    // 禁用输入框但保持正常样式
+    const answerInput = document.getElementById('answer-input');
+    if (answerInput) {
+        answerInput.disabled = true;
+        // 不设置透明度，保持正常显示
+    }
+    
+    // 禁用提交按钮但保持正常样式
+    const submitBtn = document.getElementById('submit-btn');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        // 不设置透明度，保持正常显示
+    }
+    
+    // 不禁用上一题/下一题按钮，保持可用状态但通过点击事件处理
+    // 这样用户可以看到按钮，点击时会提示退出背题模式
+}
+
+// 启用题目交互（做题和评题功能）
+function enableQuestionInteraction() {
+    // 启用选项点击
+    const options = document.querySelectorAll('.option');
+    options.forEach(option => {
+        option.style.pointerEvents = 'auto';
+        option.style.opacity = '1';
+    });
+    
+    // 启用输入框
+    const answerInput = document.getElementById('answer-input');
+    if (answerInput) {
+        answerInput.disabled = false;
+        answerInput.style.opacity = '1';
+    }
+    
+    // 启用提交按钮
+    const submitBtn = document.getElementById('submit-btn');
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+    }
+    
+    // 上一题/下一题按钮保持启用状态（之前就没有禁用）
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    if (prevBtn) {
+        prevBtn.disabled = false;
+        prevBtn.style.opacity = '1';
+    }
+    if (nextBtn) {
+        nextBtn.disabled = false;
+        nextBtn.style.opacity = '1';
     }
 }
 
@@ -1713,6 +1995,9 @@ function startMockExam() {
 
 // 显示题目
 function showQuestion() {
+    // 滚动到顶部
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
     // 检查非会员练习限制（仅在练习模式下）
     if (!isExamMode) {
         if (!checkPracticeLimit(currentQuestionType, currentQuestionIndex)) {
@@ -1799,8 +2084,30 @@ function showQuestion() {
     }
 
     // 更新按钮状态
-
     updateFavoriteButton();
+    
+    // 显示答案解析按钮（桌面端）
+    const analysisDesktopBtn = document.getElementById('analysis-btn');
+    
+    // 检查是否已经评题（与showQuestion中的逻辑保持一致）
+    const isJudged = judgedAnswers[currentQuestionIndex] && (!isExamMode || isReviewMode);
+    
+    // 考试模式或已评题时不显示背题按钮
+    if (isJudged || isExamMode) {
+        // 已评题或考试模式，不显示背题按钮
+        if (analysisDesktopBtn) analysisDesktopBtn.style.display = 'none';
+    } else {
+        // 未评题且非考试模式，显示背题按钮
+        if (analysisDesktopBtn) analysisDesktopBtn.style.display = 'inline-flex';
+    }
+    
+    // 更新移动端按钮状态
+    toggleMobileFavoriteButton(true);
+    
+    // 重置解析状态
+    if (isAnalysisVisible) {
+        hideAnalysis();
+    }
     
     // 更新进度显示
     updateStatusDisplay();
@@ -1971,6 +2278,12 @@ function restoreUserAnswer() {
 
 // 提交答案
 function submitAnswer() {
+    // 检查是否在背题模式
+    if (isAnalysisVisible) {
+        showMessage('请先退出背题模式', 'warning');
+        return;
+    }
+    
     const userAnswer = userAnswers[currentQuestionIndex];
     
     if (userAnswer === null || userAnswer === '') {
@@ -2067,6 +2380,13 @@ function processAnswer() {
     
     // 更新选项样式
     updateOptionStyles(isCorrect, correctAnswer);
+    
+    // 隐藏背题按钮（已评题）
+    const analysisDesktopBtn = document.getElementById('analysis-btn');
+    if (analysisDesktopBtn) analysisDesktopBtn.style.display = 'none';
+    
+    // 更新移动端按钮状态
+    toggleMobileFavoriteButton(true);
     
     // 处理错题本 - 在模拟考试模式下记录错题，或在练习错题本时移除答对的题目
     if (isExamMode) {
@@ -2186,6 +2506,12 @@ function updateOptionStyles(isCorrect, correctAnswer) {
 
 // 上一题
 function previousQuestion() {
+    // 检查是否在背题模式
+    if (isAnalysisVisible) {
+        showMessage('请先退出背题模式', 'warning');
+        return;
+    }
+    
     if (currentQuestionIndex > 0) {
         currentQuestionIndex--;
         showQuestion();
@@ -2194,6 +2520,12 @@ function previousQuestion() {
 
 // 下一题
 function nextQuestion() {
+    // 检查是否在背题模式
+    if (isAnalysisVisible) {
+        showMessage('请先退出背题模式', 'warning');
+        return;
+    }
+    
     // 考试模式下不自动评判，直接跳转
     if (isExamMode) {
         goToNextQuestion();
@@ -2443,8 +2775,14 @@ function returnToHome() {
     // 强制隐藏移动端悬浮按钮
     const mobileFloatBtn = document.getElementById('mobile-favorite-float-btn');
     const mobileHomeBtn = document.getElementById('mobile-home-float-btn');
+    const analysisDesktopBtn = document.getElementById('analysis-btn');
+    const analysisFloatBtn = document.getElementById('analysis-float-btn');
     if (mobileFloatBtn) mobileFloatBtn.style.display = 'none';
     if (mobileHomeBtn) mobileHomeBtn.style.display = 'none';
+    if (analysisDesktopBtn) analysisDesktopBtn.style.display = 'none';
+    if (analysisFloatBtn) analysisFloatBtn.style.display = 'none';
+    
+    // 移动端通过toggleMobileFavoriteButton处理
     
     // 移动端恢复显示底部导航栏
     if (window.innerWidth <= 768) {
