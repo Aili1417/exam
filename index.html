@@ -239,6 +239,12 @@
             </button>
         </nav>
         
+        <!-- 移动端考试倒计时悬浮按钮 -->
+        <button id="mobile-exam-timer-float" class="mobile-exam-timer-float" style="display: none;">
+            <i class="fas fa-clock"></i>
+            <span id="mobile-timer-display">00:00</span>
+        </button>
+        
         <!-- 移动端悬浮收藏按钮 -->
         <button id="mobile-favorite-float-btn" class="mobile-favorite-float" style="display: none;">
             <i class="far fa-star"></i>
@@ -322,7 +328,7 @@
                     <p class="config-desc">请设置各题型的题目数量（设置为0表示不包含该题型）</p>
                     <div class="exam-limit-tip">
                         <i class="fas fa-info-circle"></i>
-                        <span>单次考试总题目数不得超过100道题，超过限制时点击开始考试按钮可修改设置</span>
+                        <span>单次考试总题目数不得超过100道题</span>
                     </div>
                     
                     <div class="config-grid">

@@ -470,6 +470,8 @@ function initEventListeners() {
                     }
                 }
                 modal.classList.add('hidden');
+                // 关闭模态框时移除页面滚动限制
+                document.body.classList.remove('modal-open');
             }
         });
     });
@@ -799,7 +801,7 @@ function hideAnalysis() {
         const icon = analysisFloatBtn.querySelector('i');
         const text = analysisFloatBtn.querySelector('span');
         if (icon) icon.className = 'fas fa-lightbulb';
-        if (text) text.textContent = '解析';
+        if (text) text.textContent = '背题';
     }
     
     if (analysisDesktopBtn) {
@@ -2557,7 +2559,10 @@ function goToNextQuestion() {
         showQuestion();
     } else {
         // 已经是最后一题
-        if (isExamMode) {
+        if (isReviewMode) {
+            // 在查看考试详情模式下，提示已经是最后一题
+            showMessage('已经是最后一题了', 'info');
+        } else if (isExamMode) {
             // 在考试模式下，显示交卷确认模态框而不是直接提交
             showSubmitConfirmModal();
         } else if (isPracticingWrongQuestions) {
@@ -2966,6 +2971,8 @@ function showQuestionNumberModal() {
     
     // 显示模态框
     modal.classList.remove('hidden');
+    // 打开模态框时限制页面滚动，防止移动端滑动时出现白色区域
+    document.body.classList.add('modal-open');
 }
 
 // 跳转到指定题目
@@ -2983,12 +2990,16 @@ function jumpToQuestion(index) {
         
         // 隐藏模态框
         document.getElementById('question-number-modal').classList.add('hidden');
+        // 隐藏模态框时移除页面滚动限制
+        document.body.classList.remove('modal-open');
     }
 }
 
 // 隐藏题号选择模态框
 function hideQuestionNumberModal() {
     document.getElementById('question-number-modal').classList.add('hidden');
+    // 隐藏模态框时移除页面滚动限制
+    document.body.classList.remove('modal-open');
 }
 
 // 显示Loading
@@ -3560,16 +3571,23 @@ async function showExamConfigModal() {
     
     updateExamSummary();
     document.getElementById('exam-config-modal').classList.remove('hidden');
+    
+    // 打开模态框时限制页面滚动，防止移动端滑动时出现白色区域
+    document.body.classList.add('modal-open');
 }
 
 // 隐藏考试配置模态框
 function hideExamConfigModal() {
     document.getElementById('exam-config-modal').classList.add('hidden');
+    // 隐藏模态框时移除页面滚动限制
+    document.body.classList.remove('modal-open');
 }
 
 // 隐藏考试题目数超限提示模态框
 function hideExamLimitModal() {
     document.getElementById('exam-limit-modal').classList.add('hidden');
+    // 隐藏模态框时移除页面滚动限制
+    document.body.classList.remove('modal-open');
 }
 
 // 更新考试摘要
@@ -3850,11 +3868,16 @@ function showWrongQuestionsModal() {
     if (!currentUser || currentUser.membershipType === '非会员') {
         showMessage('非会员用户的错题数据不会云端存档', 'warning');
     }
+    
+    // 打开模态框时限制页面滚动，防止移动端滑动时出现白色区域
+    document.body.classList.add('modal-open');
 }
 
 // 隐藏错题本模态框
 function hideWrongQuestionsModal() {
     document.getElementById('wrong-questions-modal').classList.add('hidden');
+    // 隐藏模态框时移除页面滚动限制
+    document.body.classList.remove('modal-open');
 }
 
 // 渲染错题列表
@@ -3945,6 +3968,8 @@ function confirmClearWrongQuestions() {
 // 隐藏清空错题本确认对话框
 function hideClearWrongQuestionsModal() {
     document.getElementById('clear-wrong-questions-modal').classList.add('hidden');
+    // 隐藏模态框时移除页面滚动限制
+    document.body.classList.remove('modal-open');
 }
 
 // 练习错题
@@ -4017,11 +4042,16 @@ function showFavoritesModal() {
     if (!currentUser || currentUser.membershipType === '非会员') {
         showMessage('非会员用户的收藏数据不会云端存档', 'warning');
     }
+    
+    // 打开模态框时限制页面滚动，防止移动端滑动时出现白色区域
+    document.body.classList.add('modal-open');
 }
 
 // 隐藏收藏模态框
 function hideFavoritesModal() {
     document.getElementById('favorites-modal').classList.add('hidden');
+    // 隐藏模态框时移除页面滚动限制
+    document.body.classList.remove('modal-open');
 }
 
 // 渲染收藏列表
@@ -4118,6 +4148,8 @@ function confirmClearFavorites() {
 // 隐藏清空收藏确认对话框
 function hideClearFavoritesModal() {
     document.getElementById('clear-favorites-modal').classList.add('hidden');
+    // 隐藏模态框时移除页面滚动限制
+    document.body.classList.remove('modal-open');
 }
 
 // 练习收藏题目
@@ -4219,11 +4251,15 @@ function showSubmitConfirmModal() {
     document.getElementById('unanswered-count').textContent = unansweredCount;
     
     modal.classList.remove('hidden');
+    // 打开模态框时限制页面滚动，防止移动端滑动时出现白色区域
+    document.body.classList.add('modal-open');
 }
 
 // 隐藏交卷确认模态框
 function hideSubmitConfirmModal() {
     document.getElementById('submit-confirm-modal').classList.add('hidden');
+    // 隐藏模态框时移除页面滚动限制
+    document.body.classList.remove('modal-open');
 }
 
 // 提交考试
@@ -4282,11 +4318,15 @@ function showExamResultModal(score, totalCount, correctCount, wrongCount, accura
     document.getElementById('accuracy-rate').textContent = accuracy + '%';
     
     modal.classList.remove('hidden');
+    // 打开模态框时限制页面滚动，防止移动端滑动时出现白色区域
+    document.body.classList.add('modal-open');
 }
 
 // 隐藏考试结果模态框
 function hideExamResultModal() {
     document.getElementById('exam-result-modal').classList.add('hidden');
+    // 隐藏模态框时移除页面滚动限制
+    document.body.classList.remove('modal-open');
 }
 
 // 查看考试详情
@@ -4336,6 +4376,14 @@ function startExamTimer(durationMinutes) {
     
     // 每秒更新一次
     examTimer = setInterval(updateTimerDisplay, 1000);
+    
+    // 在移动端显示考试倒计时悬浮按钮
+    if (window.innerWidth <= 768) {
+        const mobileTimerBtn = document.getElementById('mobile-exam-timer-float');
+        if (mobileTimerBtn) {
+            mobileTimerBtn.style.display = 'flex';
+        }
+    }
 }
 
 // 停止考试计时器
@@ -4347,6 +4395,12 @@ function stopExamTimer() {
     
     // 隐藏考试导航栏
     document.getElementById('exam-nav').classList.add('hidden');
+    
+    // 隐藏移动端考试倒计时悬浮按钮
+    const mobileTimerBtn = document.getElementById('mobile-exam-timer-float');
+    if (mobileTimerBtn) {
+        mobileTimerBtn.style.display = 'none';
+    }
 }
 
 // 更新计时器显示
@@ -4363,6 +4417,12 @@ function updateTimerDisplay() {
     
     const display = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     document.getElementById('timer-display').textContent = display;
+    
+    // 同时更新移动端悬浮倒计时
+    const mobileTimerDisplay = document.getElementById('mobile-timer-display');
+    if (mobileTimerDisplay) {
+        mobileTimerDisplay.textContent = display;
+    }
     
     // 时间用完自动交卷
     if (remaining === 0) {
@@ -5108,6 +5168,8 @@ async function initUserSystem() {
 function showAuthModal() {
     document.getElementById('auth-modal').classList.remove('hidden');
     showLoginForm();
+    // 打开模态框时限制页面滚动，防止移动端滑动时出现白色区域
+    document.body.classList.add('modal-open');
 }
 
 // 隐藏认证模态框
@@ -5118,6 +5180,8 @@ function hideAuthModal() {
     document.getElementById('register-form').reset();
     // 重置为登录表单状态，避免下次打开时显示错误的表单
     showLoginForm();
+    // 隐藏模态框时移除页面滚动限制
+    document.body.classList.remove('modal-open');
 }
 
 // 显示用户中心模态框
@@ -5129,11 +5193,15 @@ function showUserCenterModal() {
     
     updateUserCenterContent();
     document.getElementById('user-center-modal').classList.remove('hidden');
+    // 打开模态框时限制页面滚动，防止移动端滑动时出现白色区域
+    document.body.classList.add('modal-open');
 }
 
 // 隐藏用户中心模态框
 function hideUserCenterModal() {
     document.getElementById('user-center-modal').classList.add('hidden');
+    // 隐藏模态框时移除页面滚动限制
+    document.body.classList.remove('modal-open');
 }
 
 // 显示会员升级模态框
@@ -5145,11 +5213,15 @@ function showMembershipModal() {
     }
     
     document.getElementById('membership-modal').classList.remove('hidden');
+    // 打开模态框时限制页面滚动，防止移动端滑动时出现白色区域
+    document.body.classList.add('modal-open');
 }
 
 // 强制显示会员升级模态框（用于过期用户等特殊情况）
 function forceShowMembershipModal() {
     document.getElementById('membership-modal').classList.remove('hidden');
+    // 打开模态框时限制页面滚动，防止移动端滑动时出现白色区域
+    document.body.classList.add('modal-open');
 }
 
 // 隐藏会员升级模态框
@@ -5159,6 +5231,8 @@ function hideMembershipModal(modalId) {
     } else {
         document.getElementById('membership-modal').classList.add('hidden');
     }
+    // 隐藏模态框时移除页面滚动限制
+    document.body.classList.remove('modal-open');
 }
 
 // 滚动会员升级模态框到底部
@@ -5512,12 +5586,17 @@ function showForgotPasswordModal() {
     
     // 聚焦到邮箱输入框
     document.getElementById('forgot-email').focus();
+    
+    // 打开模态框时限制页面滚动，防止移动端滑动时出现白色区域
+    document.body.classList.add('modal-open');
 }
 
 // 隐藏忘记密码模态框
 function hideForgotPasswordModal() {
     document.getElementById('forgot-password-modal').classList.add('hidden');
     document.getElementById('forgot-password-form').reset();
+    // 隐藏模态框时移除页面滚动限制
+    document.body.classList.remove('modal-open');
 }
 
 // 发送重置密码验证码
@@ -5783,12 +5862,17 @@ function showChangePasswordModal() {
     
     document.getElementById('change-password-modal').classList.remove('hidden');
     document.getElementById('current-password').focus();
+    
+    // 打开模态框时限制页面滚动，防止移动端滑动时出现白色区域
+    document.body.classList.add('modal-open');
 }
 
 // 隐藏修改密码模态框
 function hideChangePasswordModal() {
     document.getElementById('change-password-modal').classList.add('hidden');
     document.getElementById('change-password-form').reset();
+    // 隐藏模态框时移除页面滚动限制
+    document.body.classList.remove('modal-open');
 }
 
 // 更新密码强度指示器
@@ -5925,12 +6009,17 @@ function showEditUsernameModal() {
     input.focus();
     // 选中输入框文字方便编辑
     input.select();
+    
+    // 打开模态框时限制页面滚动，防止移动端滑动时出现白色区域
+    document.body.classList.add('modal-open');
 }
 
 // 隐藏修改用户名模态框
 function hideEditUsernameModal() {
     document.getElementById('edit-username-modal').classList.add('hidden');
     document.getElementById('edit-username-form').reset();
+    // 隐藏模态框时移除页面滚动限制
+    document.body.classList.remove('modal-open');
 }
 
 // 处理修改用户名表单提交
@@ -6470,21 +6559,29 @@ initSystem = async function() {
 // 显示重置记录确认对话框
 function showResetRecordsConfirmModal() {
     document.getElementById('reset-confirm-modal').classList.remove('hidden');
+    // 打开模态框时限制页面滚动，防止移动端滑动时出现白色区域
+    document.body.classList.add('modal-open');
 }
 
 // 隐藏重置记录确认对话框
 function hideResetConfirmModal() {
     document.getElementById('reset-confirm-modal').classList.add('hidden');
+    // 隐藏模态框时移除页面滚动限制
+    document.body.classList.remove('modal-open');
 }
 
 // 显示重置成功对话框
 function showResetSuccessModal() {
     document.getElementById('reset-success-modal').classList.remove('hidden');
+    // 打开模态框时限制页面滚动，防止移动端滑动时出现白色区域
+    document.body.classList.add('modal-open');
 }
 
 // 隐藏重置成功对话框
 function hideResetSuccessModal() {
     document.getElementById('reset-success-modal').classList.add('hidden');
+    // 隐藏模态框时移除页面滚动限制
+    document.body.classList.remove('modal-open');
 }
 
 // 确认执行重置操作
@@ -6773,6 +6870,8 @@ function showSubjectSelectorModal(isRequired = false) {
     }
     
     modal.classList.remove('hidden');
+    // 打开模态框时限制页面滚动，防止移动端滑动时出现白色区域
+    document.body.classList.add('modal-open');
 }
 
 // 动态渲染科目选项
@@ -6811,6 +6910,8 @@ function renderSubjectOptions() {
 // 隐藏科目选择模态框
 function hideSubjectSelectorModal() {
     document.getElementById('subject-selector-modal').classList.add('hidden');
+    // 隐藏模态框时移除页面滚动限制
+    document.body.classList.remove('modal-open');
 }
 
 // 更新科目题目数量显示

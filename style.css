@@ -1621,6 +1621,8 @@ body {
     align-items: center;
     z-index: 1000;
     animation: fadeIn 0.3s ease;
+    /* 防止背景页面滚动 */
+    overflow: hidden;
 }
 
 .modal-content {
@@ -1634,6 +1636,8 @@ body {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.1);
     animation: modalSlideIn 0.3s ease;
+    /* 确保内容不会超出容器 */
+    -webkit-overflow-scrolling: touch; /* 启用原生滚动以获得更流畅的体验 */
 }
 
 .modal-content.large {
@@ -1645,11 +1649,20 @@ body {
     max-width: 1000px;
 }
 
-/* 移动端科目选择器优化 */
+/* 移动端模态框样式优化 */
 @media (max-width: 768px) {
+    /* 防止模态框打开时背景滚动 */
+    body.modal-open,
+    .modal-open {
+        overflow: hidden;
+        position: fixed;
+        width: 100%;
+    }
+    
     /* 所有弹窗在移动端的高度优化 */
     .modal-content {
-        max-height: 95vh !important;
+        max-height: 95vh;
+        margin: 2vh auto; /* 添加边距以避免贴边 */
     }
     
     /* 错题本和收藏题库弹窗特殊处理 */
@@ -1659,13 +1672,15 @@ body {
     #membership-modal .modal-content,
     #free-version-modal .modal-content,
     #login-required-modal .modal-content {
-        max-height: 95vh !important;
+        max-height: 95vh;
+        margin: 2vh auto;
     }
     
     #subject-selector-modal .modal-content {
         width: 95%;
         max-width: none;
         max-height: 95vh;
+        margin: 2vh auto;
     }
     
     .subject-options {
@@ -2164,6 +2179,38 @@ body {
     /* 移动端隐藏题目头部的收藏按钮容器（但保留按钮本身） */
     .question-header .question-actions {
         display: none;
+    }
+    
+    /* 移动端考试倒计时悬浮按钮 */
+    .mobile-exam-timer-float {
+        display: none;
+        flex-direction: column;
+        position: fixed;
+        right: 15px;
+        bottom: 210px;
+        width: 56px;
+        height: 56px;
+        border-radius: 12px;
+        background: rgba(255, 89, 94, 0.95);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        font-size: 18px;
+        color: white;
+        z-index: 998;
+        border: none;
+        padding: 6px 4px;
+        cursor: default;
+        transition: all 0.3s ease;
+    }
+    
+    .mobile-exam-timer-float span {
+        font-size: 10px;
+        line-height: 1;
+        margin: 0;
+        font-weight: bold;
     }
     
     /* 移动端悬浮收藏按钮 */
