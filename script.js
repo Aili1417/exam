@@ -6164,14 +6164,18 @@ async function handleCDKActivation() {
                 // 注意：会话已经在activateCDK中创建，这里只需要启动检查
                 startSessionCheck();
                 
-                // 显示会员详情
-                if (result.data && result.data.membershipType) {
-                    setTimeout(() => {
+                // 立即弹出个人主页，1.5秒后显示恭喜消息
+                // 🎉 立即弹出个人主页，展示新的会员权益
+                showUserCenterModal();
+                
+                // 1.5秒后显示恭喜消息
+                setTimeout(() => {
+                    if (result.data && result.data.membershipType) {
                         // 使用返回的时间单位信息
                         const unitDisplayName = result.data.unitDisplayName || '小时';
                         showMessage(`恭喜您成为${result.data.membershipType.toUpperCase()}会员，有效期增加${result.data.membershipDays}${unitDisplayName}!`, 'success');
-                    }, 1500);
-                }
+                    }
+                }, 1500);
             }
             
         } else {

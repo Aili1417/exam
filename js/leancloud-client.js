@@ -829,7 +829,8 @@ class LeanCloudClient {
                 favorites: user.get('favorites') || {},
                 userStats: user.get('userStats') || {},
                 statistics: user.get('statistics') || {},
-                sessionId: sessionId // 🔐 添加会话ID
+                sessionId: sessionId, // 🔐 添加会话ID
+                passwordHash: hashedPassword // 🔐 添加密码哈希值
             };
 
             // 保存到本地存储
@@ -891,7 +892,7 @@ class LeanCloudClient {
     }
 
     /**
-     * 自动登录（从localStorage恢复会话并验证）
+     * 自动登录（从localStorage恢复会话并验证，包括密码验证）
      */
     async autoLogin() {
         try {
@@ -907,17 +908,34 @@ class LeanCloudClient {
 
             const userData = JSON.parse(storedUser);
 
+            // 🔐 检查是否存储了密码哈希
+            let storedPasswordHash = userData.passwordHash;
+            if (!storedPasswordHash) {
+                // 如果没有存储密码哈希，尝试从旧的存储方式获取
+                const oldStoredPassword = userData.password;
+                if (oldStoredPassword) {
+                    // 将旧格式的密码转换为哈希值
+                    storedPasswordHash = this._hashPassword(oldStoredPassword);
+                }
+            }
 
-            // 验证用户在云端是否仍然有效
+            if (!storedPasswordHash) {
+                // 没有密码信息，无法进行自动登录
+                localStorage.removeItem('examUser');
+                return { success: false, message: '缺少密码信息，请重新登录' };
+            }
+
+            // 🔐 使用密码哈希验证用户在云端是否仍然有效（类似loginUser的逻辑）
             const query = new AV.Query(this.ExamUser);
             query.equalTo('email', userData.email);
+            query.equalTo('password', storedPasswordHash);
             const user = await query.first();
 
             if (!user) {
-                // 用户在云端不存在，清除本地数据
+                // 密码验证失败，清除本地数据
                 localStorage.removeItem('examUser');
-          
-                return { success: false, message: '用户信息已过期' };
+                this.currentUser = null;
+                return { success: false, message: '密码验证失败，请重新登录' };
             }
 
             // 检查会员过期状态（与登录时一致的逻辑）
@@ -947,7 +965,7 @@ class LeanCloudClient {
                 }
             }
 
-            // 更新用户信息（同步最新的云端数据）
+            // 更新用户信息（同步最新的云端数据，包含密码哈希）
             this.currentUser = {
                 id: user.id,
                 objectId: user.id,
@@ -960,7 +978,8 @@ class LeanCloudClient {
                 wrongQuestions: user.get('wrongQuestions') || {},
                 favorites: user.get('favorites') || {},
                 userStats: user.get('userStats') || {},
-                statistics: user.get('statistics') || {}
+                statistics: user.get('statistics') || {},
+                passwordHash: storedPasswordHash // 🔐 存储密码哈希值
             };
 
             // 🔐 为VIP和SVIP用户创建或更新会话（SSSVIP用户无限制）
