@@ -562,7 +562,8 @@ class LeanCloudClient {
 
             return { 
                 success: true, 
-                message: '密码修改成功' 
+                message: '密码修改成功',
+                newPasswordHash: newPasswordHash // 🔐 返回新密码哈希值
             };
 
         } catch (error) {
@@ -1505,7 +1506,8 @@ class LeanCloudClient {
 
             return { 
                 success: true, 
-                message: '密码重置成功，请使用新密码登录'
+                message: '密码重置成功，请使用新密码登录',
+                newPasswordHash: hashedPassword // 🔐 返回新密码哈希值
             };
         } catch (error) {
             console.error('重置密码失败:', error);

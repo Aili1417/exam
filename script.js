@@ -5974,6 +5974,12 @@ async function handleChangePassword(e) {
             showMessage('密码修改成功！', 'success');
             hideChangePasswordModal();
             
+            // 🔐 更新本地存储的密码哈希值，防止用户数据丢失
+            if (currentUser && result.newPasswordHash) {
+                currentUser.passwordHash = result.newPasswordHash;
+                localStorage.setItem('examUser', JSON.stringify(currentUser));
+            }
+            
             // 可选：提示用户重新登录
             setTimeout(() => {
                 showMessage('为了安全，建议您重新登录', 'info');
