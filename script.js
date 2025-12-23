@@ -5091,6 +5091,11 @@ async function initUserSystem() {
                 
                 // 检查是否需要显示科目选择
                 checkSubjectSelection();
+                
+                // 自动登录成功后也显示通知（如果用户没有设置不再提醒）
+                if (window.noticeManager) {
+                    window.noticeManager.showNoticeOnLogin();
+                }
         } else {
             // 自动登录失败，检查是否有本地会话（离线模式）
             const userResult = window.leanCloudClient.getCurrentUser();
@@ -5346,6 +5351,11 @@ async function handleLogin(e) {
             
             // 检查是否需要显示科目选择
             checkSubjectSelection();
+            
+            // 登录成功后自动显示通知（如果用户没有设置不再提醒）
+            if (window.noticeManager) {
+                window.noticeManager.showNoticeOnLogin();
+            }
           
         } else {
             showMessage(result.message, 'error');

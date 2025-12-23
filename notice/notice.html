@@ -1,0 +1,66 @@
+<!-- 通知弹窗 -->
+<div id="notice-modal" class="modal hidden" data-closeable="false">
+    <div class="modal-content">
+        <div class="modal-header notice-header">
+            <h2><i class="fas fa-bullhorn"></i> 重要通知</h2>
+            <button id="close-notice" class="close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="notice-content">
+                <div class="notice-icon">📢</div>
+                <h3>欢迎加入学习交流群</h3>
+                <p class="notice-description">
+                    为了更好地为您服务，我们建立了学习交流群。在群里您可以：
+                </p>
+                <ul class="notice-benefits">
+                    <li><i class="fas fa-check-circle"></i> 获取最新学习资料</li>
+                    <li><i class="fas fa-check-circle"></i> 与其他学习者交流经验</li>
+                    <li><i class="fas fa-check-circle"></i> 第一时间了解系统更新</li>
+                    <li><i class="fas fa-check-circle"></i> 获得学习指导和答疑</li>
+                </ul>
+
+                <div class="contact-methods-notice">
+                    <div class="contact-method-notice">
+                        <div class="contact-header-notice">
+                            <i class="fab fa-qq"></i>
+                            <div class="contact-info-notice">
+                                <h5>QQ交流群</h5>
+                                <span class="contact-id-notice">群号：123456789</span>
+                            </div>
+                        </div>
+                        <div class="qr-code-notice">
+                            <img src="img/QQ.jpg" alt="QQ群二维码" />
+                            <p>扫码加入QQ群</p>
+                        </div>
+                    </div>
+
+                    <div class="contact-method-notice">
+                        <div class="contact-header-notice">
+                            <i class="fab fa-weixin"></i>
+                            <div class="contact-info-notice">
+                                <h5>微信交流群</h5>
+                                <span class="contact-id-notice">添加客服拉群</span>
+                            </div>
+                        </div>
+                        <div class="qr-code-notice">
+                            <img src="img/WeChat.jpg" alt="微信客服二维码" />
+                            <p>扫码添加客服</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="notice-footer-content">
+                    <label class="no-remind-checkbox">
+                        <input type="checkbox" id="no-remind-checkbox">
+                        <span>不再提醒</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="confirm-notice-btn" class="primary-btn">
+                <i class="fas fa-check"></i> 我知道了
+            </button>
+        </div>
+    </div>
+</div>

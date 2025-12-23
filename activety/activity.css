@@ -1,0 +1,271 @@
+/* 邀请活动样式 */
+.activity-header {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+}
+
+.activity-header h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
+}
+
+.activity-section {
+    padding: 10px 0;
+}
+
+.activity-banner {
+    text-align: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-radius: 15px;
+    margin-bottom: 30px;
+}
+
+.activity-banner.old-user {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+}
+
+.banner-icon {
+    font-size: 36px;
+    margin-bottom: 10px;
+}
+
+.activity-banner h3 {
+    color: #92400e;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.activity-banner.old-user h3 {
+    color: #1e40af;
+}
+
+.activity-banner p {
+    color: #78350f;
+    font-size: 13px;
+    margin: 0;
+}
+
+/* 移动端隐藏老用户banner */
+@media (max-width: 768px) {
+    .activity-banner.old-user {
+        display: none;
+    }
+}
+
+.activity-banner.old-user p {
+    color: #1e3a8a;
+}
+
+.code-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: stretch;
+}
+
+.code-input-group input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+}
+
+.code-input-group input:focus {
+    outline: none;
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+.code-input-group .primary-btn {
+    width: 100%;
+    padding: 12px 25px;
+    border-radius: 8px;
+    border: none;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.code-input-group .primary-btn:hover {
+    background: linear-gradient(135deg, #d97706, #b45309);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.input-hint {
+    display: block;
+    margin-top: 8px;
+    color: #6b7280;
+    font-size: 13px;
+}
+
+.invitation-code-display {
+    text-align: center;
+    padding: 30px 20px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 15px;
+    margin-bottom: 25px;
+}
+
+.code-label {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 15px;
+    font-weight: 500;
+}
+
+.code-value {
+    font-size: 36px;
+    font-weight: 700;
+    color: #1e40af;
+    letter-spacing: 8px;
+    margin-bottom: 20px;
+    font-family: 'Courier New', monospace;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.invitation-code-display .secondary-btn {
+    padding: 12px 30px;
+    border-radius: 8px;
+    border: 2px solid #3b82f6;
+    background: white;
+    color: #3b82f6;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.invitation-code-display .secondary-btn:hover {
+    background: #3b82f6;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.activity-rules {
+    background: rgba(249, 250, 251, 0.8);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #e5e7eb;
+}
+
+.activity-rules h4 {
+    color: #374151;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.activity-rules h4 i {
+    color: #3b82f6;
+}
+
+.activity-rules ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.activity-rules ul li {
+    padding: 8px 0;
+    padding-left: 25px;
+    color: #6b7280;
+    font-size: 14px;
+    position: relative;
+    line-height: 1.6;
+}
+
+.activity-rules ul li::before {
+    content: '•';
+    position: absolute;
+    left: 10px;
+    color: #3b82f6;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* 邀请记录列表 */
+.invited-users-list {
+    background: rgba(249, 250, 251, 0.8);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #e5e7eb;
+    margin-top: 20px;
+}
+
+.invited-users-list h4 {
+    color: #374151;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.invited-users-list h4 i {
+    color: #22c55e;
+}
+
+.invited-count {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 14px;
+    margin-left: auto;
+}
+
+.users-container {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.user-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+}
+
+.user-item:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+
+.user-email {
+    color: #374151;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.user-time {
+    color: #9ca3af;
+    font-size: 12px;
+}
+
+.no-data {
+    text-align: center;
+    color: #9ca3af;
+    padding: 20px;
+    font-size: 14px;
+}

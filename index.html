@@ -6,6 +6,10 @@
     <title>爱刷题</title>
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="style.css">
+    <!-- 邀请活动样式 -->
+    <link rel="stylesheet" href="activety/activity.css">
+    <!-- 通知样式 -->
+    <link rel="stylesheet" href="notice/notice.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js" onerror="console.log('particles.js CDN加载失败，将使用后备方案')"></script>
     <script src="https://unpkg.com/leancloud-storage@4.15.2/dist/av-min.js"></script>
@@ -86,7 +90,19 @@
         <main class="main">
             <!-- 欢迎页面 -->
             <section id="welcome-section" class="welcome-section">
-                <h1>欢迎使用爱刷题</h1>
+                <div class="welcome-title-row">
+                    <button id="activity-btn" class="welcome-side-btn activity-side-btn">
+                        <i class="fas fa-gift"></i>
+                        <span>邀请送会员</span>
+                        <small class="btn-badge">🔥 限时</small>
+                    </button>
+                    <h1>欢迎使用爱刷题</h1>
+                    <button id="notice-btn" class="welcome-side-btn notice-side-btn">
+                        <i class="fas fa-bullhorn"></i>
+                        <span>加入交流群</span>
+                        <small class="btn-badge">💬 免费</small>
+                    </button>
+                </div>
                 <p style="text-align: center; color: #f0eded; font-size: 14px; margin-top: -10px; margin-bottom: 20px; opacity: 0.8;">
                     <i class="fas fa-hand-point-down" style="margin-right: 5px;"></i>
                     往上滑动开始练习
@@ -771,6 +787,114 @@
     <!-- 消息提示区域 -->
     <div id="message-area"></div>
 
+    <!-- 邀请活动弹窗 -->
+    <div id="activity-modal" class="modal hidden" data-closeable="false">
+        <div class="modal-content">
+            <div class="modal-header activity-header">
+                <h2><i class="fas fa-gift"></i> 邀请新人送会员活动</h2>
+                <button id="close-activity" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- 新用户界面 -->
+                <div id="new-user-section" class="activity-section hidden">
+                    <div class="activity-banner">
+                        <div class="banner-icon">🎁</div>
+                        <h3>欢迎新用户！</h3>
+                        <p>输入邀请码，让邀请你的老用户获得会员奖励</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="invitation-code-input">
+                            <i class="fas fa-key"></i> 邀请码
+                        </label>
+                        <div class="code-input-group">
+                            <input type="text" id="invitation-code-input" placeholder="请输入6位邀请码" maxlength="6">
+                            <button type="button" id="submit-invitation-btn" class="primary-btn">
+                                <i class="fas fa-check"></i> 提交
+                            </button>
+                        </div>
+                        <small class="input-hint">请输入老用户分享给您的6位邀请码</small>
+                    </div>
+                </div>
+
+                <!-- 老用户界面 -->
+                <div id="old-user-section" class="activity-section hidden">
+                    <div class="activity-banner old-user">
+                        <div class="banner-icon">👑</div>
+                        <h3>您的专属邀请码</h3>
+                        <p>分享给新用户，成功后可获得会员奖励</p>
+                    </div>
+                    <div class="invitation-code-display">
+                        <div class="code-label">您的邀请码</div>
+                        <div class="code-value" id="user-invitation-code">------</div>
+                        <button type="button" id="copy-code-btn" class="secondary-btn">
+                            <i class="fas fa-copy"></i> 复制邀请码
+                        </button>
+                    </div>
+                    <div class="activity-rules">
+                        <h4><i class="fas fa-info-circle"></i> 活动说明</h4>
+                        <ul>
+                            <li>分享您的邀请码给新用户</li>
+                            <li>新用户提交邀请码后，您将获得一天会员奖励（可累加）</li>
+                            <li>会员奖励2026年1月1日统一发放</li>
+                            <li>活动最终解释权归平台所有</li>
+                        </ul>
+                    </div>
+                    <div class="invited-users-list">
+                        <h4><i class="fas fa-users"></i> 邀请记录 <span class="invited-count" id="invited-count">0</span></h4>
+                        <div id="invited-users-container" class="users-container">
+                            <p class="no-data">还没有人使用您的邀请码</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 通知弹窗 -->
+    <div id="notice-modal" class="modal hidden" data-closeable="false">
+        <div class="modal-content">
+            <div class="modal-header notice-header">
+                <h2><i class="fas fa-bullhorn"></i> 重要通知</h2>
+                <button id="close-notice" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="notice-content">
+                    <div class="notice-icon">📢</div>
+                    <h3>欢迎加入学习交流群</h3>
+                    <p class="notice-description">
+                        为了更好地为您服务，我们建立了学习交流群。在群里您可以：
+                    </p>
+                   
+
+                    <div class="contact-methods-notice">
+                        <div class="contact-method-notice">
+                            <div class="contact-header-notice">
+                                <i class="fab fa-qq"></i>
+                                <div class="contact-info-notice">
+                                    <h5>QQ交流群</h5>
+                                    <span class="contact-id-notice">扫码加入</span>
+                                </div>
+                            </div>
+                            <div class="qr-code-notice">
+                                <img src="img/qun.jpg" alt="QQ群二维码" />
+                                <p>扫码加入QQ群</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="notice-footer-actions">
+                <label class="no-remind-checkbox">
+                    <input type="checkbox" id="no-remind-checkbox">
+                    <span>不再提醒</span>
+                </label>
+                <button id="confirm-notice-btn" class="primary-btn">
+                    我知道了
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- 引入配置文件 -->
     <script src="config/leancloud-config.js"></script>
     
@@ -782,6 +906,12 @@
     
     <!-- 引入LeanCloud客户端 -->
     <script src="js/leancloud-client.js"></script>
+    
+    <!-- 引入邀请活动模块 -->
+    <script src="activety/activity.js"></script>
+    
+    <!-- 引入通知模块 -->
+    <script src="notice/notice.js"></script>
     
     <!-- 主要业务逻辑 -->
     <script src="script.js"></script>
@@ -1300,6 +1430,28 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // 初始化模块
+        document.addEventListener('DOMContentLoaded', function() {
+            // 等待LeanCloud初始化完成后初始化功能模块
+            const checkLeanCloudReady = setInterval(() => {
+                if (window.leanCloudClient && window.leanCloudClient.isInitialized) {
+                    clearInterval(checkLeanCloudReady);
+                    
+                    // 初始化邀请活动模块
+                    if (window.invitationActivity) {
+                        window.invitationActivity.init();
+                    }
+                    
+                    // 初始化通知模块
+                    if (window.noticeManager) {
+                        window.noticeManager.init();
+                    }
+                }
+            }, 100);
+        });
+    </script>
 
     <script>
         // 处理会员弹窗关闭事件

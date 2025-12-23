@@ -346,11 +346,109 @@ body {
     color: white;
 }
 
-.welcome-section h1 {
-    font-size: 36px;
+.welcome-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
     margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.welcome-title-row h1 {
+    font-size: 36px;
     font-weight: 600;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    margin: 0;
+}
+
+.welcome-side-btn {
+    padding: 15px 25px;
+    border-radius: 12px;
+    border: none;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    position: relative;
+    overflow: visible;
+}
+
+.welcome-side-btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    animation: pulse 0.5s ease;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: translateY(-3px) scale(1.05); }
+    50% { transform: translateY(-3px) scale(1.1); }
+}
+
+.activity-side-btn {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+}
+
+.activity-side-btn:hover {
+    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.5);
+}
+
+.notice-side-btn {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+}
+
+.notice-side-btn:hover {
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.5);
+}
+
+.welcome-side-btn i {
+    font-size: 20px;
+}
+
+.welcome-side-btn span {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.btn-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 10px;
+    font-weight: 500;
+    margin-top: -2px;
+    animation: glow 2s ease-in-out infinite;
+}
+
+@keyframes glow {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(0.95); }
+}
+
+/* 移动端响应式 */
+@media (max-width: 768px) {
+    .welcome-title-row {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .welcome-title-row h1 {
+        font-size: 28px;
+        order: -1;
+    }
+    
+    .welcome-side-btn {
+        width: 100%;
+        max-width: 300px;
+        justify-content: center;
+    }
 }
 
 .welcome-content {
@@ -404,6 +502,7 @@ body {
     color: #4ade80;
     font-weight: bold;
 }
+
 
 /* 统计信息样式 */
 .stats-section {
