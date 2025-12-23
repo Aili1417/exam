@@ -52,8 +52,29 @@ class NoticeManager {
      * 检查是否需要显示通知
      */
     shouldShowNotice() {
-        const noRemind = localStorage.getItem(this.STORAGE_KEY);
-        return noRemind !== '1';
+        const noRemindData = localStorage.getItem(this.STORAGE_KEY);
+        
+        if (!noRemindData) {
+            return true; // 没有记录，显示通知
+        }
+        
+        try {
+            const data = JSON.parse(noRemindData);
+            const today = new Date().toDateString();
+            
+            // 检查是否是同一天
+            if (data.date === today) {
+                return false; // 今天已点击不再提醒
+            }
+            
+            // 不同天，清除记录
+            localStorage.removeItem(this.STORAGE_KEY);
+            return true;
+        } catch (e) {
+            // 解析失败，清除记录
+            localStorage.removeItem(this.STORAGE_KEY);
+            return true;
+        }
     }
 
     /**
@@ -89,8 +110,12 @@ class NoticeManager {
         // 检查是否勾选了不再提醒
         const checkbox = document.getElementById('no-remind-checkbox');
         if (checkbox && checkbox.checked) {
-            localStorage.setItem(this.STORAGE_KEY, '1');
-            console.log('✅ 已设置不再提醒');
+            const noRemindData = {
+                date: new Date().toDateString(), // 当前日期
+                timestamp: new Date().getTime()
+            };
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(noRemindData));
+            console.log('✅ 已设置今日不再提醒');
         }
 
         this.hideNotice();

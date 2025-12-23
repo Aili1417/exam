@@ -5092,10 +5092,15 @@ async function initUserSystem() {
                 // 检查是否需要显示科目选择
                 checkSubjectSelection();
                 
-                // 自动登录成功后也显示通知（如果用户没有设置不再提醒）
-                if (window.noticeManager) {
+                // 自动登录成功后也显示通知（如果用户没有设置不再提醒且不是SSSVIP用户）
+                if (window.noticeManager && currentUser.membershipType?.toUpperCase() !== 'SSSVIP') {
                     window.noticeManager.showNoticeOnLogin();
                 }
+                
+                // 隐藏活动和通知按钮（SSSVIP用户）
+                setTimeout(() => {
+                    updateActivityNoticeVisibility();
+                }, 100);
         } else {
             // 自动登录失败，检查是否有本地会话（离线模式）
             const userResult = window.leanCloudClient.getCurrentUser();
@@ -5352,10 +5357,15 @@ async function handleLogin(e) {
             // 检查是否需要显示科目选择
             checkSubjectSelection();
             
-            // 登录成功后自动显示通知（如果用户没有设置不再提醒）
-            if (window.noticeManager) {
+            // 登录成功后自动显示通知（如果用户没有设置不再提醒且不是SSSVIP用户）
+            if (window.noticeManager && currentUser.membershipType?.toUpperCase() !== 'SSSVIP') {
                 window.noticeManager.showNoticeOnLogin();
             }
+            
+            // 隐藏活动和通知按钮（SSSVIP用户）
+            setTimeout(() => {
+                updateActivityNoticeVisibility();
+            }, 100);
           
         } else {
             showMessage(result.message, 'error');
@@ -6545,6 +6555,22 @@ async function syncDataToCloud(subject) {
         showMessage('同步数据失败，请重试', 'error');
     } finally {
         hideLoading();
+    }
+}
+
+// 更新活动和通知按钮显示状态
+function updateActivityNoticeVisibility() {
+    const activityBtn = document.getElementById('activity-btn');
+    const noticeBtn = document.getElementById('notice-btn');
+    
+    if (currentUser && currentUser.membershipType?.toUpperCase() === 'SSSVIP') {
+        // SSSVIP用户隐藏按钮
+        if (activityBtn) activityBtn.style.display = 'none';
+        if (noticeBtn) noticeBtn.style.display = 'none';
+    } else {
+        // 其他用户显示按钮
+        if (activityBtn) activityBtn.style.display = '';
+        if (noticeBtn) noticeBtn.style.display = '';
     }
 }
 
