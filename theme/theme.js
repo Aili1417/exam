@@ -19,7 +19,7 @@ class ThemeManager {
      * 初始化主题管理器
      */
     init() {
-        console.log('[主题] 开始初始化主题管理器 v1.4.0');
+
         
         // 从本地存储加载主题偏好
         this.loadThemePreference();
@@ -33,7 +33,7 @@ class ThemeManager {
         // 立即更新按钮状态（从 localStorage 读取会员信息）
         this.updateThemeToggleButton();
         
-        console.log('[主题] 初始化完成');
+
     }
     
     /**
@@ -130,7 +130,7 @@ class ThemeManager {
             if (examUserStr) {
                 const examUser = JSON.parse(examUserStr);
                 membershipType = examUser.membershipType;
-                console.log('[主题] 从 localStorage 读取会员类型:', membershipType);
+              
             }
         } catch (e) {
             console.warn('[主题] 解析 examUser 失败:', e);
@@ -143,37 +143,36 @@ class ThemeManager {
             } else {
                 membershipType = window.currentUser.membershipType;
             }
-            console.log('[主题] 从 currentUser 读取会员类型:', membershipType);
+            
         }
         
         // 如果还是没有会员类型，返回false
         if (!membershipType) {
-            console.log('[主题] 用户未登录或未获取到会员类型');
+          
             return false;
         }
         
         // 转换为大写并检查是否包含 SVIP 或 SSSVIP
         const typeUpper = String(membershipType).toUpperCase().trim();
-        console.log('[主题] 会员类型:', membershipType, '-> 转换后:', typeUpper);
+        
         
         // 检查是否包含 SVIP 或 SSSVIP（但不能只是VIP）
         let hasPermission = false;
         
         if (typeUpper.includes('SSSVIP')) {
             hasPermission = true;
-            console.log('[主题] ✅ 检测到SSSVIP会员');
+            
         } else if (typeUpper.includes('SVIP')) {
             hasPermission = true;
-            console.log('[主题] ✅ 检测到SVIP会员');
+           
         } else if (typeUpper === 'VIP') {
             hasPermission = false;
-            console.log('[主题] ❌ 检测到VIP会员，无权限');
+           
         } else {
             hasPermission = false;
-            console.log('[主题] ❌ 非会员或未知会员类型');
-        }
+        }console
         
-        console.log('[主题] 权限检查结果:', hasPermission);
+
         
         return hasPermission;
     }
@@ -237,7 +236,7 @@ class ThemeManager {
         
         // 检查会员权限
         const hasPermission = this.checkMembershipPermission();
-        console.log('[主题] 更新按钮状态，权限:', hasPermission);
+ 
         
         if (this.currentTheme === this.MINIMAL_THEME) {
             // 当前是极简主题，按钮显示"切换到默认主题"
@@ -268,10 +267,10 @@ class ThemeManager {
         // 更新锁定状态
         if (!hasPermission) {
             themeToggleBtn.classList.add('locked');
-            console.log('[主题] 按钮已锁定');
+     ;
         } else {
             themeToggleBtn.classList.remove('locked');
-            console.log('[主题] 按钮已解锁');
+            
         }
     }
     

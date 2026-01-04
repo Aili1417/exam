@@ -3659,7 +3659,8 @@ body {
         flex-wrap: wrap;
     }
     
-    .data-actions {
+    .data-actions,
+    .theme-actions {
         grid-template-columns: 1fr;
     }
     

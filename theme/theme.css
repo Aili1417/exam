@@ -381,6 +381,26 @@ body.minimal-theme .modal {
 body.minimal-theme .modal-content {
     background: #1a1a1a !important;
     border: 2px solid #333333 !important;
+    overflow: visible !important;
+}
+
+body.minimal-theme .user-info-card {
+    background: #1a1a1a !important;
+    border: 2px solid #444444 !important;
+    color: #ffffff !important;
+    overflow: hidden !important;
+    margin-top: 0 !important;
+    position: relative !important;
+}
+
+body.minimal-theme .user-info-card::after,
+body.minimal-theme .user-info-card::before {
+    display: none !important;
+}
+
+body.minimal-theme .user-info-card:hover {
+    box-shadow: 0 8px 20px rgba(255, 255, 255, 0.15) !important;
+    transform: none !important;
 }
 
 body.minimal-theme .modal-header {
@@ -552,22 +572,6 @@ body.minimal-theme .membership-card .price {
 /* 个人中心样式 */
 body.minimal-theme .user-center-content {
     background: transparent !important;
-}
-
-body.minimal-theme .user-info-card {
-    background: #1a1a1a !important;
-    border: 2px solid #444444 !important;
-    color: #ffffff !important;
-    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1) !important;
-}
-
-body.minimal-theme .user-info-card::after,
-body.minimal-theme .user-info-card::before {
-    display: none !important;
-}
-
-body.minimal-theme .user-info-card:hover {
-    box-shadow: 0 8px 20px rgba(255, 255, 255, 0.15) !important;
 }
 
 body.minimal-theme .user-avatar {
