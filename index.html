@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="activety/activity.css">
     <!-- 通知样式 -->
     <link rel="stylesheet" href="notice/notice.css">
+    <!-- 极简主题样式 -->
+    <link rel="stylesheet" href="theme/theme.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js" onerror="console.log('particles.js CDN加载失败，将使用后备方案')"></script>
     <script src="https://unpkg.com/leancloud-storage@4.15.2/dist/av-min.js"></script>
@@ -29,6 +31,8 @@
     <script src="js/emailjs-fallback.js"></script>
     <script src="js/silent-loader.js"></script>
     <script src="js/resource-status.js"></script>
+    <!-- 极简主题脚本 -->
+    <script src="theme/theme.js"></script>
     <script src="index.js"></script>
 </head>
 <body>
@@ -651,7 +655,17 @@
                             <button id="login-register-btn" class="primary-btn">登录/注册</button>
                         </div>
                     </div>
-
+                    <!-- 主题设置 -->
+                    <div class="theme-settings">
+                        <h3><i class="fas fa-palette"></i> 主题设置</h3>
+                        <div class="theme-actions">
+                            <button id="theme-toggle-btn" class="action-btn">
+                                <i class="fas fa-adjust"></i>
+                                <span class="theme-text">极简主题</span>
+                                <small>黑白配色，无粒子背景</small>
+                            </button>
+                        </div>
+                    </div>
                     <!-- 数据管理 -->
                     <div class="data-management">
                         <h3><i class="fas fa-database"></i> 数据管理</h3>
@@ -668,6 +682,8 @@
                             </button>
                         </div>
                     </div>
+
+                    
 
                     <!-- 学习统计 -->
                     <div class="learning-stats">

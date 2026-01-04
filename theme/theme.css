@@ -1,0 +1,1281 @@
+/* 极简主题样式 - 黑底白字 */
+
+/* 极简主题激活时的全局样式 */
+body.minimal-theme {
+    background: #000000 !important;
+    animation: none !important;
+    color: #ffffff !important;
+}
+
+/* 隐藏粒子背景 */
+body.minimal-theme #particles-js {
+    display: none !important;
+}
+
+/* 容器样式 */
+body.minimal-theme .container {
+    background: #000000;
+}
+
+/* 头部样式 */
+body.minimal-theme .header {
+    background: #1a1a1a !important;
+    border: 1px solid #333333 !important;
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1) !important;
+}
+
+body.minimal-theme .logo {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .nav-btn {
+    background: #2a2a2a !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .nav-btn:hover {
+    background: #3a3a3a !important;
+}
+
+body.minimal-theme .nav-btn.primary {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 2px solid #ffffff !important;
+}
+
+body.minimal-theme .nav-btn.primary:hover {
+    background: #e0e0e0 !important;
+    color: #000000 !important;
+}
+
+/* 状态指示器 */
+body.minimal-theme .status-indicator {
+    background: #1a1a1a !important;
+    color: #ffffff !important;
+    border: 1px solid #333333 !important;
+}
+
+body.minimal-theme .status-indicator i {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .status-indicator.connected i {
+    color: #ffffff !important;
+}
+
+/* 考试导航栏 */
+body.minimal-theme .exam-nav {
+    border-left: 1px solid #333333 !important;
+    border-right: 1px solid #333333 !important;
+}
+
+body.minimal-theme .exam-timer {
+    background: #1a1a1a !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .exam-timer i {
+    color: #ffffff !important;
+}
+
+/* 资源状态面板 */
+body.minimal-theme .resource-status {
+    background: #1a1a1a !important;
+    border: 1px solid #333333 !important;
+}
+
+body.minimal-theme .resource-item {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .status-badge.loading {
+    background: #2a2a2a !important;
+    color: #ffffff !important;
+    border: 1px solid #444444 !important;
+}
+
+body.minimal-theme .status-badge.success {
+    background: #1a1a1a !important;
+    color: #ffffff !important;
+    border: 1px solid #444444 !important;
+}
+
+body.minimal-theme .status-badge.fallback {
+    background: #2a2a2a !important;
+    color: #ffffff !important;
+    border: 1px solid #444444 !important;
+}
+
+body.minimal-theme .status-badge.error {
+    background: #3a3a3a !important;
+    color: #ffffff !important;
+    border: 1px solid #555555 !important;
+}
+
+/* 欢迎页面 */
+body.minimal-theme .welcome-section {
+    background: #1a1a1a !important;
+    border: 2px solid #333333 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .welcome-title-row h1 {
+    color: #ffffff !important;
+    text-shadow: none !important;
+}
+
+body.minimal-theme .welcome-side-btn {
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.2) !important;
+}
+
+body.minimal-theme .welcome-side-btn:hover {
+    background: #e0e0e0 !important;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3) !important;
+}
+
+body.minimal-theme .btn-badge {
+    background: #000000 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .welcome-card {
+    background: #2a2a2a !important;
+    border: 1px solid #444444 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .welcome-card:hover {
+    background: #333333 !important;
+}
+
+body.minimal-theme .welcome-card h2 {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .welcome-card ul li {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .welcome-card ul li::before {
+    color: #ffffff !important;
+}
+
+/* 题型选择区 */
+body.minimal-theme .question-type-section {
+    background: #1a1a1a !important;
+    border: 2px solid #333333 !important;
+}
+
+body.minimal-theme .type-btn {
+    background: #2a2a2a !important;
+    color: #ffffff !important;
+    border: 1px solid #444444 !important;
+}
+
+body.minimal-theme .type-btn:enabled {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme .type-btn:enabled:hover {
+    background: #e0e0e0 !important;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2) !important;
+}
+
+body.minimal-theme .type-btn.mock-exam:enabled {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme .type-btn.mock-exam:enabled:hover {
+    background: #e0e0e0 !important;
+}
+
+body.minimal-theme .reset-btn {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme .reset-btn:hover {
+    background: #e0e0e0 !important;
+}
+
+/* 题目显示区 */
+body.minimal-theme .question-container {
+    background: #1a1a1a !important;
+    border: 2px solid #333333 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .question-header {
+    border-bottom: 1px solid #444444 !important;
+}
+
+body.minimal-theme #question-type-label {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme .action-btn {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .action-btn:hover {
+    background: #2a2a2a !important;
+}
+
+body.minimal-theme .action-btn.favorited {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .question-text {
+    color: #ffffff !important;
+}
+
+/* 选项样式 */
+body.minimal-theme .option {
+    background: #2a2a2a !important;
+    border: 1px solid #444444 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .option:hover {
+    background: #333333 !important;
+}
+
+body.minimal-theme .option.selected {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border-color: #ffffff !important;
+}
+
+body.minimal-theme .option.selected::before {
+    background: #000000 !important;
+}
+
+body.minimal-theme .option.correct {
+    background: #4a4a4a !important;
+    border-color: #666666 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .option.wrong {
+    background: #3a3a3a !important;
+    border-color: #555555 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .option-marker {
+    background: #1a1a1a !important;
+    color: #ffffff !important;
+    border: 1px solid #444444 !important;
+}
+
+body.minimal-theme .option.selected .option-marker {
+    background: #000000 !important;
+    color: #ffffff !important;
+    border: 1px solid #000000 !important;
+}
+
+body.minimal-theme .option.correct .option-marker {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme .option.wrong .option-marker {
+    background: #1a1a1a !important;
+    color: #ffffff !important;
+}
+
+/* 输入框样式 */
+body.minimal-theme #answer-input {
+    background: #1a1a1a !important;
+    border: 2px solid #444444 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme #answer-input:focus {
+    background: #2a2a2a !important;
+    border-color: #666666 !important;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1) !important;
+}
+
+body.minimal-theme #answer-input::placeholder {
+    color: #888888 !important;
+}
+
+/* 答案反馈 */
+body.minimal-theme .answer-feedback {
+    background: #1a1a1a !important;
+    border: 2px solid #333333 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .feedback-correct {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .feedback-wrong {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .correct-answer {
+    background: #2a2a2a !important;
+    border-left: 4px solid #ffffff !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .explanation {
+    background: #2a2a2a !important;
+    color: #ffffff !important;
+}
+
+/* 按钮样式 */
+body.minimal-theme .primary-btn {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme .primary-btn:hover {
+    background: #e0e0e0 !important;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2) !important;
+}
+
+body.minimal-theme .secondary-btn {
+    background: #1a1a1a !important;
+    color: #ffffff !important;
+    border: 2px solid #ffffff !important;
+}
+
+body.minimal-theme .secondary-btn:hover {
+    background: #2a2a2a !important;
+}
+
+body.minimal-theme .danger-btn {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme .danger-btn:hover {
+    background: #e0e0e0 !important;
+}
+
+/* 底部状态栏 */
+body.minimal-theme .footer {
+    background: transparent !important;
+}
+
+body.minimal-theme .status-bar {
+    background: #1a1a1a !important;
+    color: #ffffff !important;
+    border: 1px solid #333333 !important;
+}
+
+/* 模态框样式 */
+body.minimal-theme .modal {
+    background: rgba(0, 0, 0, 0.9) !important;
+}
+
+body.minimal-theme .modal-content {
+    background: #1a1a1a !important;
+    border: 2px solid #333333 !important;
+}
+
+body.minimal-theme .modal-header {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme .modal-body {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .close-btn {
+    color: #000000 !important;
+}
+
+body.minimal-theme .close-btn:hover {
+    background: #e0e0e0 !important;
+}
+
+/* 表单样式 */
+body.minimal-theme input[type="text"],
+body.minimal-theme input[type="email"],
+body.minimal-theme input[type="password"],
+body.minimal-theme input[type="number"],
+body.minimal-theme select,
+body.minimal-theme textarea {
+    background: #1a1a1a !important;
+    border: 2px solid #444444 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme input:focus,
+body.minimal-theme select:focus,
+body.minimal-theme textarea:focus {
+    border-color: #666666 !important;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Loading组件 */
+body.minimal-theme .loading-overlay {
+    background: rgba(0, 0, 0, 0.95) !important;
+}
+
+body.minimal-theme .loading-spinner {
+    background: #1a1a1a !important;
+    border: 2px solid #333333 !important;
+}
+
+body.minimal-theme .loading-text {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .spinner-rotate {
+    border: 4px solid #2a2a2a !important;
+    border-top: 4px solid #ffffff !important;
+}
+
+/* 移动端底部导航栏 */
+body.minimal-theme .mobile-bottom-nav {
+    background: #1a1a1a !important;
+    border-top: 1px solid #333333 !important;
+}
+
+body.minimal-theme .mobile-bottom-nav .nav-btn {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .mobile-bottom-nav .nav-btn:hover {
+    background: #2a2a2a !important;
+}
+
+/* 悬浮按钮 */
+body.minimal-theme .mobile-favorite-float,
+body.minimal-theme .mobile-home-float,
+body.minimal-theme .analysis-float {
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3) !important;
+}
+
+body.minimal-theme .mobile-favorite-float:hover,
+body.minimal-theme .mobile-home-float:hover,
+body.minimal-theme .analysis-float:hover {
+    background: #e0e0e0 !important;
+}
+
+body.minimal-theme .analysis-float.active {
+    background: #e0e0e0 !important;
+}
+
+/* 背题按钮 */
+body.minimal-theme .analysis-btn-desktop {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme .analysis-btn-desktop:hover {
+    background: #e0e0e0 !important;
+}
+
+body.minimal-theme .analysis-btn-desktop.active {
+    background: #e0e0e0 !important;
+}
+
+/* 活动和通知弹窗 */
+body.minimal-theme .activity-header,
+body.minimal-theme .notice-header {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme .activity-banner {
+    background: #2a2a2a !important;
+    border: 1px solid #444444 !important;
+}
+
+body.minimal-theme .activity-banner h3,
+body.minimal-theme .activity-banner p {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .lottery-display {
+    background: #ffffff !important;
+    border: 2px solid #ffffff !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme .lottery-btn {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme .lottery-btn:hover:not(:disabled) {
+    background: #e0e0e0 !important;
+}
+
+/* 题号选择 */
+body.minimal-theme .question-number {
+    background: #2a2a2a !important;
+    border: 1px solid #444444 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .question-number.answered {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme .question-number.current {
+    background: #e0e0e0 !important;
+    color: #000000 !important;
+    border: 2px solid #ffffff !important;
+}
+
+/* 会员相关 */
+body.minimal-theme .membership-card {
+    background: #2a2a2a !important;
+    border: 2px solid #444444 !important;
+}
+
+body.minimal-theme .membership-card h3 {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .membership-card .price {
+    color: #ffffff !important;
+}
+
+/* 个人中心样式 */
+body.minimal-theme .user-center-content {
+    background: transparent !important;
+}
+
+body.minimal-theme .user-info-card {
+    background: #1a1a1a !important;
+    border: 2px solid #444444 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1) !important;
+}
+
+body.minimal-theme .user-info-card::after,
+body.minimal-theme .user-info-card::before {
+    display: none !important;
+}
+
+body.minimal-theme .user-info-card:hover {
+    box-shadow: 0 8px 20px rgba(255, 255, 255, 0.15) !important;
+}
+
+body.minimal-theme .user-avatar {
+    color: #ffffff !important;
+    background: #2a2a2a !important;
+    border: 2px solid #444444 !important;
+}
+
+body.minimal-theme .user-details h3 {
+    color: #ffffff !important;
+    text-shadow: none !important;
+}
+
+body.minimal-theme .user-details p {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .membership-badge {
+    background: #2a2a2a !important;
+    border: 1px solid #444444 !important;
+    color: #ffffff !important;
+    backdrop-filter: none !important;
+}
+
+body.minimal-theme .membership-badge::before {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .membership-badge.vip {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border-color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.3) !important;
+}
+
+body.minimal-theme .membership-badge.vip::before {
+    color: #000000 !important;
+}
+
+body.minimal-theme .membership-badge.svip {
+    background: #e0e0e0 !important;
+    color: #000000 !important;
+    border-color: #e0e0e0 !important;
+    box-shadow: 0 2px 8px rgba(224, 224, 224, 0.3) !important;
+}
+
+body.minimal-theme .membership-badge.svip::before {
+    color: #000000 !important;
+}
+
+body.minimal-theme .membership-badge.sssvip {
+    background: #cccccc !important;
+    color: #000000 !important;
+    border-color: #cccccc !important;
+    box-shadow: 0 2px 8px rgba(204, 204, 204, 0.3) !important;
+}
+
+body.minimal-theme .membership-badge.sssvip::before {
+    color: #000000 !important;
+}
+
+body.minimal-theme .user-actions .primary-btn {
+    background: #ffffff !important;
+    border: 2px solid #ffffff !important;
+    color: #000000 !important;
+    backdrop-filter: none !important;
+}
+
+body.minimal-theme .user-actions .primary-btn:hover {
+    background: #e0e0e0 !important;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2) !important;
+}
+
+body.minimal-theme .user-actions .secondary-btn {
+    background: #2a2a2a !important;
+    border: 2px solid #444444 !important;
+    color: #ffffff !important;
+    backdrop-filter: none !important;
+}
+
+body.minimal-theme .user-actions .secondary-btn:hover {
+    background: #333333 !important;
+    border-color: #555555 !important;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 会员按钮样式 */
+body.minimal-theme .membership-btn {
+    background: #ffffff !important;
+    border: 2px solid #ffffff !important;
+    color: #000000 !important;
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.2) !important;
+}
+
+body.minimal-theme .membership-btn::before {
+    display: none !important;
+}
+
+body.minimal-theme .membership-btn:hover {
+    background: #e0e0e0 !important;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3) !important;
+}
+
+body.minimal-theme .membership-btn i {
+    color: #000000 !important;
+}
+
+/* 会员弹窗样式 */
+body.minimal-theme #membership-modal .modal-content {
+    background: #1a1a1a !important;
+    border: 2px solid #333333 !important;
+}
+
+body.minimal-theme #membership-modal .modal-header {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme #membership-modal .modal-header h3 {
+    color: #000000 !important;
+}
+
+body.minimal-theme #membership-modal .modal-header i {
+    color: #000000 !important;
+}
+
+body.minimal-theme #membership-modal .modal-body {
+    color: #ffffff !important;
+}
+
+/* 会员卡片样式 */
+body.minimal-theme .membership-plans {
+    background: transparent !important;
+}
+
+body.minimal-theme .plan-card {
+    background: #2a2a2a !important;
+    border: 2px solid #444444 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .plan-card:hover {
+    background: #333333 !important;
+    border-color: #555555 !important;
+    box-shadow: 0 8px 20px rgba(255, 255, 255, 0.1) !important;
+}
+
+body.minimal-theme .plan-card.recommended {
+    border-color: #ffffff !important;
+    box-shadow: 0 8px 25px rgba(255, 255, 255, 0.2) !important;
+}
+
+body.minimal-theme .plan-card .plan-name {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .plan-card .plan-price {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .plan-card .plan-features {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .plan-card .plan-features li {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .plan-card .plan-features li::before {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .plan-card .select-plan-btn {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 2px solid #ffffff !important;
+}
+
+body.minimal-theme .plan-card .select-plan-btn:hover {
+    background: #e0e0e0 !important;
+}
+
+body.minimal-theme .plan-card.recommended .select-plan-btn {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme .plan-card.recommended .select-plan-btn:hover {
+    background: #e0e0e0 !important;
+}
+
+/* CDK激活区域 */
+body.minimal-theme .cdk-activation {
+    background: #2a2a2a !important;
+    border: 2px solid #444444 !important;
+}
+
+body.minimal-theme .cdk-activation h4 {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .cdk-activation p {
+    color: #cccccc !important;
+}
+
+body.minimal-theme .cdk-input-group input {
+    background: #1a1a1a !important;
+    border: 2px solid #444444 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .cdk-input-group input:focus {
+    border-color: #666666 !important;
+}
+
+body.minimal-theme .cdk-input-group button {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme .cdk-input-group button:hover {
+    background: #e0e0e0 !important;
+}
+
+/* 联系方式区域 */
+body.minimal-theme .contact-section {
+    background: #2a2a2a !important;
+    border: 2px solid #444444 !important;
+}
+
+body.minimal-theme .contact-section h4 {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .contact-methods {
+    background: transparent !important;
+}
+
+body.minimal-theme .contact-method {
+    background: #1a1a1a !important;
+    border: 1px solid #444444 !important;
+}
+
+body.minimal-theme .contact-method:hover {
+    background: #2a2a2a !important;
+    border-color: #555555 !important;
+}
+
+body.minimal-theme .contact-method h5 {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .contact-method p {
+    color: #cccccc !important;
+}
+
+body.minimal-theme .contact-method .qr-code img {
+    border: 2px solid #444444 !important;
+}
+
+/* 图标按钮 */
+body.minimal-theme .icon-btn {
+    background: #2a2a2a !important;
+    color: #ffffff !important;
+    border: 1px solid #444444 !important;
+}
+
+body.minimal-theme .icon-btn:hover {
+    background: #333333 !important;
+    border-color: #555555 !important;
+}
+
+/* 统计信息 */
+body.minimal-theme .learning-stats {
+    background: #1a1a1a !important;
+    border: 1px solid #444444 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .learning-stats h3 {
+    color: #ffffff !important;
+    border-bottom-color: #444444 !important;
+}
+
+body.minimal-theme .stats-grid {
+    display: grid !important;
+    gap: 15px !important;
+}
+
+body.minimal-theme .stat-item {
+    background: #2a2a2a !important;
+    border: 1px solid #444444 !important;
+    color: #ffffff !important;
+    padding: 20px !important;
+    border-radius: 8px !important;
+    text-align: center !important;
+}
+
+body.minimal-theme .stat-item i {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .stat-number {
+    color: #ffffff !important;
+    font-size: 2em !important;
+    font-weight: bold !important;
+    display: block !important;
+    margin-bottom: 8px !important;
+}
+
+body.minimal-theme .stat-label {
+    color: #cccccc !important;
+    font-size: 0.9em !important;
+    display: block !important;
+}
+
+/* 错题本和收藏 */
+body.minimal-theme .questions-list {
+    background: #1a1a1a !important;
+}
+
+body.minimal-theme .question-item {
+    background: #2a2a2a !important;
+    border: 1px solid #444444 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .question-item:hover {
+    background: #333333 !important;
+}
+
+/* 考试结果 */
+body.minimal-theme .exam-result-summary {
+    background: #2a2a2a !important;
+    border: 2px solid #444444 !important;
+}
+
+body.minimal-theme .result-score {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .result-stats {
+    color: #ffffff !important;
+}
+
+/* 滚动条样式 */
+body.minimal-theme ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+body.minimal-theme ::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+
+body.minimal-theme ::-webkit-scrollbar-thumb {
+    background: #ffffff;
+    border-radius: 4px;
+}
+
+body.minimal-theme ::-webkit-scrollbar-thumb:hover {
+    background: #e0e0e0;
+}
+
+/* 禁用所有渐变和动画效果 */
+body.minimal-theme * {
+    animation: none !important;
+    transition: all 0.2s ease !important;
+}
+
+/* 移除所有阴影效果（保留必要的边框阴影） */
+body.minimal-theme .type-btn::before,
+body.minimal-theme .reset-btn::before {
+    display: none !important;
+}
+
+/* 会员弹窗额外样式 */
+body.minimal-theme .membership-plans-grid {
+    background: transparent !important;
+}
+
+body.minimal-theme .plan-badge {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme .plan-duration {
+    color: #cccccc !important;
+}
+
+body.minimal-theme .plan-original-price {
+    color: #888888 !important;
+}
+
+body.minimal-theme .plan-discount {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme .features-list {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .features-list li {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .features-list li i {
+    color: #ffffff !important;
+}
+
+/* CDK激活区域额外样式 */
+body.minimal-theme .cdk-activation-section {
+    background: #2a2a2a !important;
+    border: 2px solid #444444 !important;
+}
+
+body.minimal-theme .cdk-activation-section::before {
+    display: none !important;
+}
+
+body.minimal-theme .cdk-activation-section h4 {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .cdk-activation-section h4 i {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .cdk-activation-section p {
+    color: #cccccc !important;
+}
+
+body.minimal-theme .cdk-input {
+    background: #1a1a1a !important;
+    border: 2px solid #444444 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .cdk-input:focus {
+    border-color: #666666 !important;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1) !important;
+}
+
+body.minimal-theme .cdk-input::placeholder {
+    color: #888888 !important;
+}
+
+body.minimal-theme .activate-btn {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme .activate-btn:hover {
+    background: #e0e0e0 !important;
+}
+
+/* 联系方式额外样式 */
+body.minimal-theme .contact-info {
+    color: #cccccc !important;
+}
+
+body.minimal-theme .contact-item {
+    background: #1a1a1a !important;
+    border: 1px solid #444444 !important;
+}
+
+body.minimal-theme .contact-item:hover {
+    background: #2a2a2a !important;
+}
+
+body.minimal-theme .contact-item i {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .contact-item span {
+    color: #ffffff !important;
+}
+
+/* 会员特权列表 */
+body.minimal-theme .privileges-list {
+    background: transparent !important;
+}
+
+body.minimal-theme .privilege-item {
+    background: #2a2a2a !important;
+    border: 1px solid #444444 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .privilege-item:hover {
+    background: #333333 !important;
+    border-color: #555555 !important;
+}
+
+body.minimal-theme .privilege-item i {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .privilege-item h5 {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .privilege-item p {
+    color: #cccccc !important;
+}
+
+/* 支付方式 */
+body.minimal-theme .payment-methods {
+    background: transparent !important;
+}
+
+body.minimal-theme .payment-method {
+    background: #2a2a2a !important;
+    border: 2px solid #444444 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .payment-method:hover {
+    background: #333333 !important;
+    border-color: #555555 !important;
+}
+
+body.minimal-theme .payment-method.selected {
+    border-color: #ffffff !important;
+    background: #333333 !important;
+}
+
+body.minimal-theme .payment-method i {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .payment-method span {
+    color: #ffffff !important;
+}
+
+/* 价格对比表 */
+body.minimal-theme .price-comparison {
+    background: #2a2a2a !important;
+    border: 2px solid #444444 !important;
+}
+
+body.minimal-theme .price-comparison th {
+    background: #1a1a1a !important;
+    color: #ffffff !important;
+    border-bottom: 2px solid #444444 !important;
+}
+
+body.minimal-theme .price-comparison td {
+    color: #ffffff !important;
+    border-bottom: 1px solid #333333 !important;
+}
+
+body.minimal-theme .price-comparison tr:hover {
+    background: #333333 !important;
+}
+
+/* 会员说明 */
+body.minimal-theme .membership-description {
+    background: #2a2a2a !important;
+    border: 2px solid #444444 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .membership-description h4 {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .membership-description p {
+    color: #cccccc !important;
+}
+
+body.minimal-theme .membership-description ul {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .membership-description ul li {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .membership-description ul li::before {
+    color: #ffffff !important;
+}
+
+/* 免费版本提示 */
+body.minimal-theme #free-version-modal .modal-content {
+    background: #1a1a1a !important;
+    border: 2px solid #333333 !important;
+}
+
+body.minimal-theme #free-version-modal .modal-header {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme #free-version-modal .modal-body {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .free-version-info {
+    background: #2a2a2a !important;
+    border: 2px solid #444444 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .free-version-info h4 {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .free-version-info p {
+    color: #cccccc !important;
+}
+
+/* 登录提示弹窗 */
+body.minimal-theme #login-required-modal .modal-content {
+    background: #1a1a1a !important;
+    border: 2px solid #333333 !important;
+}
+
+body.minimal-theme #login-required-modal .modal-header {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme #login-required-modal .modal-body {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .login-prompt {
+    background: #2a2a2a !important;
+    border: 2px solid #444444 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .login-prompt h4 {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .login-prompt p {
+    color: #cccccc !important;
+}
+
+/* 修改密码和用户名弹窗 */
+body.minimal-theme #change-password-modal .modal-content,
+body.minimal-theme #edit-username-modal .modal-content {
+    background: #1a1a1a !important;
+    border: 2px solid #333333 !important;
+}
+
+body.minimal-theme #change-password-modal .modal-header,
+body.minimal-theme #edit-username-modal .modal-header {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme #change-password-modal .modal-header h2,
+body.minimal-theme #edit-username-modal .modal-header h2 {
+    color: #000000 !important;
+}
+
+body.minimal-theme #change-password-modal .modal-header i,
+body.minimal-theme #edit-username-modal .modal-header i {
+    color: #000000 !important;
+}
+
+body.minimal-theme #change-password-modal .modal-body,
+body.minimal-theme #edit-username-modal .modal-body {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .form-group label {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .password-hint {
+    color: #cccccc !important;
+}
+
+body.minimal-theme .password-strength-indicator {
+    background: #2a2a2a !important;
+}
+
+body.minimal-theme .strength-bar {
+    background: #1a1a1a !important;
+}
+
+body.minimal-theme .strength-progress {
+    background: #ffffff !important;
+}
+
+body.minimal-theme .strength-text {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .password-input-group {
+    background: transparent !important;
+}
+
+body.minimal-theme .toggle-password-btn {
+    background: #2a2a2a !important;
+    color: #ffffff !important;
+    border: 1px solid #444444 !important;
+}
+
+body.minimal-theme .toggle-password-btn:hover {
+    background: #333333 !important;
+}
+
+body.minimal-theme .form-actions {
+    background: transparent !important;
+}

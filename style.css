@@ -3390,6 +3390,7 @@ body {
 
 /* 数据管理样式 */
 .data-management,
+.theme-settings,
 .learning-stats {
     background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(10px);
@@ -3401,12 +3402,14 @@ body {
 }
 
 .data-management:hover,
+.theme-settings:hover,
 .learning-stats:hover {
     transform: translateY(-2px);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
 }
 
 .data-management h3,
+.theme-settings h3,
 .learning-stats h3 {
     margin: 0 0 16px 0;
     color: #1f2937;
@@ -3419,6 +3422,7 @@ body {
 }
 
 .data-management h3::after,
+.theme-settings h3::after,
 .learning-stats h3::after {
     content: '';
     flex: 1;
@@ -3428,6 +3432,7 @@ body {
 }
 
 .data-management h3 i,
+.theme-settings h3 i,
 .learning-stats h3 i {
     color: #3b82f6;
     font-size: 18px;
@@ -3436,7 +3441,8 @@ body {
     border-radius: 6px;
 }
 
-.data-actions {
+.data-actions,
+.theme-actions {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 20px;
@@ -5243,3 +5249,277 @@ body {
     20%, 40%, 60%, 80% { transform: translateX(5px); }
 }
 
+
+/* 主题切换按钮特殊样式 */
+#theme-toggle-btn {
+    position: relative;
+}
+
+#theme-toggle-btn.minimal-active {
+    border-color: #ffffff;
+    background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+}
+
+#theme-toggle-btn.minimal-active:not(:disabled):hover {
+    border-color: #ffffff;
+    background: linear-gradient(145deg, #333333, #2a2a2a);
+}
+
+#theme-toggle-btn.minimal-active i {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+#theme-toggle-btn.minimal-active:not(:disabled):hover i {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+#theme-toggle-btn.minimal-active span {
+    color: #ffffff;
+}
+
+#theme-toggle-btn.minimal-active small {
+    color: #cccccc;
+}
+
+/* 锁定状态样式 */
+#theme-toggle-btn.locked {
+    border-color: #999999;
+    background: linear-gradient(145deg, #f0f0f0, #e0e0e0);
+    opacity: 0.8;
+    cursor: not-allowed;
+}
+
+#theme-toggle-btn.locked i {
+    color: #999999;
+    background: rgba(153, 153, 153, 0.1);
+}
+
+#theme-toggle-btn.locked span {
+    color: #999999;
+}
+
+#theme-toggle-btn.locked small {
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+#theme-toggle-btn.locked:hover {
+    border-color: #f59e0b;
+    background: linear-gradient(145deg, #fef3c7, #fde68a);
+    opacity: 1;
+}
+
+#theme-toggle-btn.locked:hover i {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+}
+
+#theme-toggle-btn.locked:hover span {
+    color: #f59e0b;
+}
+
+#theme-toggle-btn.locked:hover small {
+    color: #d97706;
+}
+
+/* 极简主题下的主题设置样式 */
+body.minimal-theme .theme-settings {
+    background: #2a2a2a !important;
+    border: 2px solid #444444 !important;
+}
+
+body.minimal-theme .theme-settings h3 {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .theme-settings h3 i {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.minimal-theme .theme-settings h3::after {
+    background: linear-gradient(to right, #ffffff, transparent) !important;
+}
+
+body.minimal-theme #theme-toggle-btn {
+    background: #1a1a1a !important;
+    border: 2px solid #ffffff !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme #theme-toggle-btn:not(:disabled):hover {
+    background: #2a2a2a !important;
+    border-color: #ffffff !important;
+}
+
+body.minimal-theme #theme-toggle-btn i {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.minimal-theme #theme-toggle-btn span {
+    color: #ffffff !important;
+}
+
+body.minimal-theme #theme-toggle-btn small {
+    color: #cccccc !important;
+}
+
+/* 极简主题下的锁定状态 */
+body.minimal-theme #theme-toggle-btn.locked {
+    background: #2a2a2a !important;
+    border: 2px solid #666666 !important;
+    opacity: 0.8 !important;
+}
+
+body.minimal-theme #theme-toggle-btn.locked i {
+    color: #666666 !important;
+    background: rgba(102, 102, 102, 0.1) !important;
+}
+
+body.minimal-theme #theme-toggle-btn.locked span {
+    color: #666666 !important;
+}
+
+body.minimal-theme #theme-toggle-btn.locked small {
+    color: #f59e0b !important;
+}
+
+body.minimal-theme #theme-toggle-btn.locked:hover {
+    background: #333333 !important;
+    border-color: #f59e0b !important;
+    opacity: 1 !important;
+}
+
+body.minimal-theme #theme-toggle-btn.locked:hover i {
+    color: #f59e0b !important;
+    background: rgba(245, 158, 11, 0.1) !important;
+}
+
+body.minimal-theme #theme-toggle-btn.locked:hover span {
+    color: #f59e0b !important;
+}
+
+body.minimal-theme #theme-toggle-btn.locked:hover small {
+    color: #fbbf24 !important;
+}
+
+/* 数据管理和学习统计 */
+body.minimal-theme .data-management,
+body.minimal-theme .learning-stats {
+    background: #2a2a2a !important;
+    border: 2px solid #444444 !important;
+}
+
+body.minimal-theme .data-management h3,
+body.minimal-theme .learning-stats h3 {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .data-management h3 i,
+body.minimal-theme .learning-stats h3 i {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.minimal-theme .data-management h3::after,
+body.minimal-theme .learning-stats h3::after {
+    background: linear-gradient(to right, #ffffff, transparent) !important;
+}
+
+body.minimal-theme .action-btn {
+    background: #1a1a1a !important;
+    border: 2px solid #444444 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .action-btn:not(:disabled):hover {
+    background: #2a2a2a !important;
+    border-color: #555555 !important;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1) !important;
+}
+
+body.minimal-theme .action-btn::before {
+    display: none !important;
+}
+
+body.minimal-theme .action-btn i {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.minimal-theme .action-btn:not(:disabled):hover i {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+}
+
+body.minimal-theme .action-btn span {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .action-btn small {
+    color: #cccccc !important;
+}
+
+body.minimal-theme .action-btn:disabled {
+    background: #1a1a1a !important;
+    border-color: #333333 !important;
+    opacity: 0.5 !important;
+}
+
+/* 学习统计网格 */
+body.minimal-theme .stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
+    gap: 16px !important;
+    background: transparent !important;
+}
+
+body.minimal-theme .stats-grid .stat-item {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    background: #1a1a1a !important;
+    border: 2px solid #444444 !important;
+    color: #ffffff !important;
+    padding: 20px 16px !important;
+    border-radius: 14px !important;
+    text-align: center !important;
+    min-height: 100px !important;
+}
+
+body.minimal-theme .stats-grid .stat-item::before {
+    display: none !important;
+}
+
+body.minimal-theme .stats-grid .stat-item:hover {
+    background: #2a2a2a !important;
+    border-color: #555555 !important;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1) !important;
+}
+
+body.minimal-theme .stats-grid .stat-item .stat-number {
+    display: block !important;
+    visibility: visible !important;
+    color: #ffffff !important;
+    font-size: 2em !important;
+    font-weight: bold !important;
+    margin-bottom: 8px !important;
+}
+
+body.minimal-theme .stats-grid .stat-item .stat-number::after {
+    display: none !important;
+}
+
+body.minimal-theme .stats-grid .stat-item .stat-label {
+    display: block !important;
+    visibility: visible !important;
+    color: #cccccc !important;
+    font-size: 0.9em !important;
+}
+
+body.minimal-theme .stats-grid .stat-item:hover .stat-label {
+    color: #ffffff !important;
+}

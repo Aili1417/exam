@@ -5027,6 +5027,10 @@ async function initUserSystem() {
             currentUser = autoLoginResult.user;
             console.log('用户状态:', currentUser.membershipType);
             
+            // 触发用户登录事件，通知主题管理器
+            window.dispatchEvent(new Event('userLoggedIn'));
+            console.log('[事件] 已触发 userLoggedIn 事件');
+            
             // 自动登录成功后也立即检查会员状态（确保本地存储一致性）
             const membershipCheck = await checkCurrentUserMembershipStatus();
             
@@ -5202,6 +5206,12 @@ function showUserCenterModal() {
     }
     
     updateUserCenterContent();
+    
+    // 更新主题按钮状态（每次打开个人中心时重新检查权限）
+    if (window.themeManager) {
+        window.themeManager.updateThemeToggleButton();
+    }
+    
     document.getElementById('user-center-modal').classList.remove('hidden');
     // 打开模态框时限制页面滚动，防止移动端滑动时出现白色区域
     document.body.classList.add('modal-open');

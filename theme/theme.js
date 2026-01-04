@@ -1,0 +1,306 @@
+/**
+ * 极简主题管理器
+ * 负责主题切换、持久化存储和UI更新
+ * v1.4.0 - 直接从 localStorage 读取会员信息
+ */
+
+class ThemeManager {
+    constructor() {
+        this.THEME_KEY = 'exam_theme_preference';
+        this.MINIMAL_THEME = 'minimal';
+        this.DEFAULT_THEME = 'default';
+        this.currentTheme = this.DEFAULT_THEME;
+        
+        // 初始化
+        this.init();
+    }
+    
+    /**
+     * 初始化主题管理器
+     */
+    init() {
+        console.log('[主题] 开始初始化主题管理器 v1.4.0');
+        
+        // 从本地存储加载主题偏好
+        this.loadThemePreference();
+        
+        // 应用保存的主题
+        this.applyTheme(this.currentTheme, false);
+        
+        // 绑定主题切换按钮事件
+        this.bindThemeToggleButton();
+        
+        // 立即更新按钮状态（从 localStorage 读取会员信息）
+        this.updateThemeToggleButton();
+        
+        console.log('[主题] 初始化完成');
+    }
+    
+    /**
+     * 从本地存储加载主题偏好
+     */
+    loadThemePreference() {
+        try {
+            const savedTheme = localStorage.getItem(this.THEME_KEY);
+            if (savedTheme === this.MINIMAL_THEME || savedTheme === this.DEFAULT_THEME) {
+                this.currentTheme = savedTheme;
+            }
+        } catch (error) {
+            console.error('[主题] 加载主题偏好失败:', error);
+        }
+    }
+    
+    /**
+     * 保存主题偏好到本地存储
+     */
+    saveThemePreference() {
+        try {
+            localStorage.setItem(this.THEME_KEY, this.currentTheme);
+        } catch (error) {
+            console.error('[主题] 保存主题偏好失败:', error);
+        }
+    }
+    
+    /**
+     * 应用主题
+     * @param {string} theme - 主题名称 ('minimal' 或 'default')
+     * @param {boolean} showMessage - 是否显示切换消息
+     */
+    applyTheme(theme, showMessage = true) {
+        const body = document.body;
+        
+        if (theme === this.MINIMAL_THEME) {
+            // 应用极简主题
+            body.classList.add('minimal-theme');
+            this.currentTheme = this.MINIMAL_THEME;
+            
+            // 隐藏粒子背景
+            this.hideParticles();
+            
+            if (showMessage && typeof window.showMessage === 'function') {
+                window.showMessage('已切换到极简主题', 'success');
+            }
+        } else {
+            // 应用默认主题
+            body.classList.remove('minimal-theme');
+            this.currentTheme = this.DEFAULT_THEME;
+            
+            // 显示粒子背景
+            this.showParticles();
+            
+            if (showMessage && typeof window.showMessage === 'function') {
+                window.showMessage('已切换到默认主题', 'success');
+            }
+        }
+        
+        // 保存主题偏好
+        this.saveThemePreference();
+        
+        // 更新主题切换按钮状态
+        this.updateThemeToggleButton();
+    }
+    
+    /**
+     * 切换主题
+     */
+    toggleTheme() {
+        // 检查会员权限
+        if (!this.checkMembershipPermission()) {
+            this.showMembershipRequiredMessage();
+            return;
+        }
+        
+        const newTheme = this.currentTheme === this.MINIMAL_THEME 
+            ? this.DEFAULT_THEME 
+            : this.MINIMAL_THEME;
+        
+        this.applyTheme(newTheme, true);
+    }
+    
+    /**
+     * 检查会员权限（直接从 localStorage 读取）
+     * @returns {boolean} 是否有权限使用主题功能
+     */
+    checkMembershipPermission() {
+        // 优先从本地存储的 examUser 读取会员信息
+        let membershipType = null;
+        
+        try {
+            const examUserStr = localStorage.getItem('examUser');
+            if (examUserStr) {
+                const examUser = JSON.parse(examUserStr);
+                membershipType = examUser.membershipType;
+                console.log('[主题] 从 localStorage 读取会员类型:', membershipType);
+            }
+        } catch (e) {
+            console.warn('[主题] 解析 examUser 失败:', e);
+        }
+        
+        // 如果本地存储没有，再尝试从全局用户对象获取（备用方案）
+        if (!membershipType && window.currentUser) {
+            if (typeof window.currentUser.get === 'function') {
+                membershipType = window.currentUser.get('membershipType');
+            } else {
+                membershipType = window.currentUser.membershipType;
+            }
+            console.log('[主题] 从 currentUser 读取会员类型:', membershipType);
+        }
+        
+        // 如果还是没有会员类型，返回false
+        if (!membershipType) {
+            console.log('[主题] 用户未登录或未获取到会员类型');
+            return false;
+        }
+        
+        // 转换为大写并检查是否包含 SVIP 或 SSSVIP
+        const typeUpper = String(membershipType).toUpperCase().trim();
+        console.log('[主题] 会员类型:', membershipType, '-> 转换后:', typeUpper);
+        
+        // 检查是否包含 SVIP 或 SSSVIP（但不能只是VIP）
+        let hasPermission = false;
+        
+        if (typeUpper.includes('SSSVIP')) {
+            hasPermission = true;
+            console.log('[主题] ✅ 检测到SSSVIP会员');
+        } else if (typeUpper.includes('SVIP')) {
+            hasPermission = true;
+            console.log('[主题] ✅ 检测到SVIP会员');
+        } else if (typeUpper === 'VIP') {
+            hasPermission = false;
+            console.log('[主题] ❌ 检测到VIP会员，无权限');
+        } else {
+            hasPermission = false;
+            console.log('[主题] ❌ 非会员或未知会员类型');
+        }
+        
+        console.log('[主题] 权限检查结果:', hasPermission);
+        
+        return hasPermission;
+    }
+    
+    /**
+     * 显示会员权限不足提示
+     */
+    showMembershipRequiredMessage() {
+        // 如果有全局的showMessage函数，使用它
+        if (typeof window.showMessage === 'function') {
+            window.showMessage('主题功能仅限SVIP和SSSVIP会员使用', 'error');
+        } else {
+            alert('主题功能仅限SVIP和SSSVIP会员使用\n\n请升级到SVIP或SSSVIP会员以使用此功能');
+        }
+    }
+    
+    /**
+     * 隐藏粒子背景
+     */
+    hideParticles() {
+        const particlesContainer = document.getElementById('particles-js');
+        if (particlesContainer) {
+            particlesContainer.style.display = 'none';
+        }
+    }
+    
+    /**
+     * 显示粒子背景
+     */
+    showParticles() {
+        const particlesContainer = document.getElementById('particles-js');
+        if (particlesContainer) {
+            particlesContainer.style.display = 'block';
+        }
+    }
+    
+    /**
+     * 绑定主题切换按钮事件
+     */
+    bindThemeToggleButton() {
+        const themeToggleBtn = document.getElementById('theme-toggle-btn');
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', () => {
+                this.toggleTheme();
+            });
+        }
+    }
+    
+    /**
+     * 更新主题切换按钮状态
+     */
+    updateThemeToggleButton() {
+        const themeToggleBtn = document.getElementById('theme-toggle-btn');
+        if (!themeToggleBtn) {
+            return;
+        }
+        
+        const icon = themeToggleBtn.querySelector('i');
+        const text = themeToggleBtn.querySelector('.theme-text');
+        const small = themeToggleBtn.querySelector('small');
+        
+        // 检查会员权限
+        const hasPermission = this.checkMembershipPermission();
+        console.log('[主题] 更新按钮状态，权限:', hasPermission);
+        
+        if (this.currentTheme === this.MINIMAL_THEME) {
+            // 当前是极简主题，按钮显示"切换到默认主题"
+            if (icon) {
+                icon.className = hasPermission ? 'fas fa-palette' : 'fas fa-lock';
+            }
+            if (text) {
+                text.textContent = '默认主题';
+            }
+            if (small) {
+                small.textContent = hasPermission ? '彩色渐变，有粒子背景' : '需要SVIP/SSSVIP会员';
+            }
+            themeToggleBtn.classList.add('minimal-active');
+        } else {
+            // 当前是默认主题，按钮显示"切换到极简主题"
+            if (icon) {
+                icon.className = hasPermission ? 'fas fa-adjust' : 'fas fa-lock';
+            }
+            if (text) {
+                text.textContent = '极简主题';
+            }
+            if (small) {
+                small.textContent = hasPermission ? '黑底白字，无粒子背景' : '需要SVIP/SSSVIP会员';
+            }
+            themeToggleBtn.classList.remove('minimal-active');
+        }
+        
+        // 更新锁定状态
+        if (!hasPermission) {
+            themeToggleBtn.classList.add('locked');
+            console.log('[主题] 按钮已锁定');
+        } else {
+            themeToggleBtn.classList.remove('locked');
+            console.log('[主题] 按钮已解锁');
+        }
+    }
+    
+    /**
+     * 获取当前主题
+     * @returns {string} 当前主题名称
+     */
+    getCurrentTheme() {
+        return this.currentTheme;
+    }
+    
+    /**
+     * 检查是否为极简主题
+     * @returns {boolean}
+     */
+    isMinimalTheme() {
+        return this.currentTheme === this.MINIMAL_THEME;
+    }
+}
+
+// 创建全局主题管理器实例
+window.themeManager = null;
+
+// 在DOM加载完成后初始化主题管理器
+document.addEventListener('DOMContentLoaded', function() {
+    window.themeManager = new ThemeManager();
+});
+
+// 导出主题管理器类（用于模块化）
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = ThemeManager;
+}
