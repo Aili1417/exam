@@ -5524,3 +5524,48 @@ body.minimal-theme .stats-grid .stat-item .stat-label {
 body.minimal-theme .stats-grid .stat-item:hover .stat-label {
     color: #ffffff !important;
 }
+
+/* 考试结果统计数据 - 极简主题 */
+body.minimal-theme .exam-statistics {
+    display: grid !important;
+}
+
+body.minimal-theme .exam-statistics .stat-item {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    background: #2a2a2a !important;
+    border: 2px solid #444444 !important;
+    border-left: 4px solid #ffffff !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1) !important;
+}
+
+body.minimal-theme .exam-statistics .stat-item:hover {
+    background: #333333 !important;
+    border-color: #555555 !important;
+    box-shadow: 0 8px 20px rgba(255, 255, 255, 0.15) !important;
+}
+
+body.minimal-theme .exam-statistics .stat-label {
+    display: inline !important;
+    visibility: visible !important;
+    color: #cccccc !important;
+    font-weight: 600 !important;
+}
+
+body.minimal-theme .exam-statistics .stat-item span {
+    display: inline !important;
+    visibility: visible !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .exam-statistics .correct-text {
+    color: #22c55e !important;
+    background: rgba(34, 197, 94, 0.2) !important;
+}
+
+body.minimal-theme .exam-statistics .wrong-text {
+    color: #ef4444 !important;
+    background: rgba(239, 68, 68, 0.2) !important;
+}

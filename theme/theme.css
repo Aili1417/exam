@@ -256,15 +256,15 @@ body.minimal-theme .option.selected::before {
 }
 
 body.minimal-theme .option.correct {
-    background: #4a4a4a !important;
-    border-color: #666666 !important;
-    color: #ffffff !important;
+    background: rgba(34, 197, 94, 0.2) !important;
+    border: 2px solid #22c55e !important;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3) !important;
 }
 
 body.minimal-theme .option.wrong {
-    background: #3a3a3a !important;
-    border-color: #555555 !important;
-    color: #ffffff !important;
+    background: rgba(239, 68, 68, 0.2) !important;
+    border: 2px solid #ef4444 !important;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3) !important;
 }
 
 body.minimal-theme .option-marker {
@@ -280,13 +280,15 @@ body.minimal-theme .option.selected .option-marker {
 }
 
 body.minimal-theme .option.correct .option-marker {
-    background: #ffffff !important;
-    color: #000000 !important;
+    background: #22c55e !important;
+    color: #ffffff !important;
+    border: 2px solid #22c55e !important;
 }
 
 body.minimal-theme .option.wrong .option-marker {
-    background: #1a1a1a !important;
+    background: #ef4444 !important;
     color: #ffffff !important;
+    border: 2px solid #ef4444 !important;
 }
 
 /* 输入框样式 */
@@ -314,11 +316,29 @@ body.minimal-theme .answer-feedback {
 }
 
 body.minimal-theme .feedback-correct {
-    color: #ffffff !important;
+    color: #22c55e !important;
+    text-shadow: 0 0 10px rgba(34, 197, 94, 0.5) !important;
 }
 
 body.minimal-theme .feedback-wrong {
+    color: #ef4444 !important;
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.5) !important;
+}
+
+body.minimal-theme .feedback-unanswered {
+    color: #fbbf24 !important;
+}
+
+body.minimal-theme .correct-answer {
+    background: rgba(34, 197, 94, 0.15) !important;
+    border-left: 4px solid #22c55e !important;
     color: #ffffff !important;
+}
+
+body.minimal-theme .explanation {
+    background: #2a2a2a !important;
+    color: #cccccc !important;
+    border: 1px solid #444444 !important;
 }
 
 body.minimal-theme .correct-answer {
@@ -915,6 +935,43 @@ body.minimal-theme .result-score {
 
 body.minimal-theme .result-stats {
     color: #ffffff !important;
+}
+
+/* 考试统计数据 */
+body.minimal-theme .exam-statistics {
+    display: grid !important;
+}
+
+body.minimal-theme .exam-statistics .stat-item {
+    background: #2a2a2a !important;
+    border: 2px solid #444444 !important;
+    border-left: 4px solid #ffffff !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1) !important;
+}
+
+body.minimal-theme .exam-statistics .stat-item:hover {
+    background: #333333 !important;
+    border-color: #555555 !important;
+    box-shadow: 0 8px 20px rgba(255, 255, 255, 0.15) !important;
+}
+
+body.minimal-theme .exam-statistics .stat-label {
+    color: #cccccc !important;
+}
+
+body.minimal-theme .exam-statistics .stat-item span:last-child {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .exam-statistics .correct-text {
+    color: #22c55e !important;
+    background: rgba(34, 197, 94, 0.2) !important;
+}
+
+body.minimal-theme .exam-statistics .wrong-text {
+    color: #ef4444 !important;
+    background: rgba(239, 68, 68, 0.2) !important;
 }
 
 /* 滚动条样式 */
