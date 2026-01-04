@@ -1809,10 +1809,10 @@ function getMembershipTimeDetails() {
 
 // 删除重复的showMembershipExpiredModal函数，使用统一的过期处理逻辑
 
-// 检查非会员练习限制（每种题型最多10题）
+// 检查非会员练习限制（每种题型最多30题）
 function checkPracticeLimit(questionType, currentIndex) {
     if (!currentUser || currentUser.membershipType === '非会员') {
-        if (currentIndex >= 10) {
+        if (currentIndex >= 30) {
             showMembershipRequiredModal('继续练习更多题目');
             return false;
         }
@@ -2337,8 +2337,8 @@ function autoNextQuestion() {
     
     // 检查非会员练习限制（仅练习模式）
     if (!isExamMode && (!currentUser || currentUser.membershipType === '非会员')) {
-        // 非会员用户最多只能到第10题（索引9）
-        if (currentQuestionIndex >= 9) {
+        // 非会员用户最多只能到第30题（索引29）
+        if (currentQuestionIndex >= 29) {
             showMembershipRequiredModal('继续练习更多题目');
             return;
         }
@@ -2409,14 +2409,14 @@ function processAnswer() {
     // 保存进度
     saveProgress();
     
-    // 检查是否是非会员用户的第10题
+    // 检查是否是非会员用户的第30题
     const isNonMemberLastQuestion = (!currentUser || currentUser.membershipType === '非会员') && 
-                                   currentQuestionIndex === 9 && !isExamMode;
+                                   currentQuestionIndex === 29 && !isExamMode;
     
     if (isNonMemberLastQuestion) {
-        // 非会员用户第10题，不自动跳转，显示完成提示
+        // 非会员用户第30题，不自动跳转，显示完成提示
         setTimeout(() => {
-            showMessage('恭喜完成前10题！升级会员可练习更多题目', 'success');
+            showMessage('恭喜完成前30题！升级会员可练习更多题目', 'success');
             setTimeout(() => {
                 showMembershipRequiredModal('继续练习更多题目');
             }, 2000);
@@ -2547,8 +2547,8 @@ function nextQuestion() {
 function goToNextQuestion() {
     // 检查非会员练习限制
     if (!isExamMode && (!currentUser || currentUser.membershipType === '非会员')) {
-        // 非会员用户最多只能到第10题（索引9）
-        if (currentQuestionIndex >= 9) {
+        // 非会员用户最多只能到第30题（索引29）
+        if (currentQuestionIndex >= 29) {
             showMembershipRequiredModal('继续练习更多题目');
             return;
         }
@@ -3122,8 +3122,8 @@ function removeFromWrongQuestions(type, question) {
 // 保存进度
 function saveProgress() {
     if (!isExamMode && currentQuestionType) {
-        // 非会员用户只能保存前10题的进度
-        const maxSaveIndex = (!currentUser || currentUser.membershipType === '非会员') ? 9 : currentQuestions.length - 1;
+        // 非会员用户只能保存前30题的进度
+        const maxSaveIndex = (!currentUser || currentUser.membershipType === '非会员') ? 29 : currentQuestions.length - 1;
         
         // 限制保存的题目范围
         const limitedQuestions = currentQuestions.slice(0, maxSaveIndex + 1);
@@ -3205,8 +3205,8 @@ function loadProgress(type) {
             }
             
             // 对于非会员用户，确保当前索引不超过限制
-            if ((!currentUser || currentUser.membershipType === '非会员') && currentQuestionIndex > 9) {
-                currentQuestionIndex = 9;
+            if ((!currentUser || currentUser.membershipType === '非会员') && currentQuestionIndex > 29) {
+                currentQuestionIndex = 29;
             }
             
         } else {

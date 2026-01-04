@@ -511,18 +511,32 @@ body.minimal-theme .analysis-float.active {
     background: #e0e0e0 !important;
 }
 
-/* 背题按钮 */
+/* 背题按钮 - 与收藏按钮保持一致的样式 */
 body.minimal-theme .analysis-btn-desktop {
-    background: #ffffff !important;
-    color: #000000 !important;
+    background: #1a1a1a !important;
+    border: 2px solid #444444 !important;
+    color: #ffffff !important;
 }
 
 body.minimal-theme .analysis-btn-desktop:hover {
-    background: #e0e0e0 !important;
+    background: #2a2a2a !important;
+    border-color: #555555 !important;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1) !important;
 }
 
 body.minimal-theme .analysis-btn-desktop.active {
-    background: #e0e0e0 !important;
+    background: #2a2a2a !important;
+    border-color: #666666 !important;
+}
+
+body.minimal-theme .analysis-btn-desktop i {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.minimal-theme .analysis-btn-desktop:hover i {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.15) !important;
 }
 
 /* 活动和通知弹窗 */
@@ -993,10 +1007,26 @@ body.minimal-theme ::-webkit-scrollbar-thumb:hover {
     background: #e0e0e0;
 }
 
-/* 禁用所有渐变和动画效果 */
+/* 禁用所有渐变和动画效果，但保留Loading组件动画 */
 body.minimal-theme * {
     animation: none !important;
     transition: all 0.2s ease !important;
+}
+
+/* 例外：保留Loading组件的动画效果 */
+body.minimal-theme .loading-overlay,
+body.minimal-theme .loading-spinner,
+body.minimal-theme .spinner,
+body.minimal-theme .spinner-rotate,
+body.minimal-theme .fadeInLoading,
+body.minimal-theme .slideInLoading,
+body.minimal-theme .spin {
+    animation: initial !important;
+}
+
+/* 确保Loading动画在极简主题下正常显示 */
+body.minimal-theme .spinner-rotate {
+    animation: spin 1s linear infinite !important;
 }
 
 /* 移除所有阴影效果（保留必要的边框阴影） */
