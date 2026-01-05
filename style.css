@@ -5569,3 +5569,54 @@ body.minimal-theme .exam-statistics .wrong-text {
     color: #ef4444 !important;
     background: rgba(239, 68, 68, 0.2) !important;
 }
+
+/* 访问量统计显示样式 */
+.visit-count-display {
+    text-align: center;
+    margin: 10px 0 20px 0;
+}
+
+.visit-count-stats {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 8px 16px;
+    border-radius: 20px;
+    color: #f0eded;
+    font-size: 14px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.visit-count-stats:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+}
+
+.visit-count-stats i {
+    margin-right: 6px;
+    color: #64b5f6;
+}
+
+#visit-number {
+    font-weight: bold;
+    color: #ffffff;
+    font-size: 15px;
+}
+
+/* 极简主题下的访问量显示 */
+body.minimal-theme .visit-count-stats {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #cccccc !important;
+}
+
+body.minimal-theme .visit-count-stats:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme #visit-number {
+    color: #ffffff !important;
+}
