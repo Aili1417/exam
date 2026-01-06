@@ -339,81 +339,131 @@
 
     <!-- 模拟考试配置模态框 -->
     <div id="exam-config-modal" class="modal hidden" data-closeable="false">
-        <div class="modal-content">
+        <div class="modal-content exam-modal-content">
             <div class="modal-header">
-                <h2>模拟考试设置</h2>
+                <h2>模拟考试</h2>
                 <button id="close-exam-config" class="close-btn">&times;</button>
             </div>
+            
+            <!-- 面板切换标签 -->
+            <div class="exam-tabs">
+                <button class="exam-tab active" data-tab="exam-settings">
+                    <i class="fas fa-cog"></i>
+                    <span>考试设置</span>
+                </button>
+                <button class="exam-tab" data-tab="exam-history">
+                    <i class="fas fa-history"></i>
+                    <span>考试记录</span>
+                </button>
+            </div>
+            
             <div class="modal-body">
-                <div class="config-section">
-                    <h3><i class="fas fa-cog"></i> 题目数量配置</h3>
-                    <p class="config-desc">请设置各题型的题目数量（设置为0表示不包含该题型）</p>
-                    <div class="exam-limit-tip">
-                        <i class="fas fa-info-circle"></i>
-                        <span>单次考试总题目数不得超过100道题</span>
+                <!-- 考试设置面板 -->
+                <div id="exam-settings-panel" class="exam-panel active">
+                    <div class="config-section">
+                        <h3><i class="fas fa-cog"></i> 题目数量配置</h3>
+                        <p class="config-desc">请设置各题型的题目数量（设置为0表示不包含该题型）</p>
+                        <div class="exam-limit-tip">
+                            <i class="fas fa-info-circle"></i>
+                            <span>单次考试总题目数不得超过100道题</span>
+                        </div>
+                        
+                        <div class="config-grid">
+                            <div class="config-item">
+                                <label for="single-count-input">
+                                    <i class="fas fa-dot-circle"></i>
+                                    单选题数量
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" id="single-count-input" min="0" max="100" value="10">
+                                    <span class="available-count">可用: <span id="single-available">0</span> 题</span>
+                                </div>
+                            </div>
+                            
+                            <div class="config-item">
+                                <label for="multiple-count-input">
+                                    <i class="fas fa-check-square"></i>
+                                    多选题数量
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" id="multiple-count-input" min="0" max="100" value="5">
+                                    <span class="available-count">可用: <span id="multiple-available">0</span> 题</span>
+                                </div>
+                            </div>
+                            
+                            <div class="config-item">
+                                <label for="judge-count-input">
+                                    <i class="fas fa-toggle-on"></i>
+                                    判断题数量
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" id="judge-count-input" min="0" max="100" value="5">
+                                    <span class="available-count">可用: <span id="judge-available">0</span> 题</span>
+                                </div>
+                            </div>
+                            
+                            <div class="config-item">
+                                <label for="fill-count-input">
+                                    <i class="fas fa-pencil-alt"></i>
+                                    填空题数量
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" id="fill-count-input" min="0" max="100" value="5">
+                                    <span class="available-count">可用: <span id="fill-available">0</span> 题</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="exam-summary">
+                            <div class="summary-item">
+                                <span>总题目数：</span>
+                                <span id="total-exam-questions">25</span>
+                            </div>
+                            <div class="summary-item">
+                                <span>预计用时：</span>
+                                <span id="estimated-time">50分钟</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 题目来源图例说明
+                        <div class="exam-source-legend">
+                            <p class="legend-title"><i class="fas fa-palette"></i> 题号颜色说明</p>
+                            <div class="legend-items">
+                                <div class="legend-item">
+                                    <span class="legend-dot source-wrong"></span>
+                                    <span>错题本</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-dot source-favorite"></span>
+                                    <span>收藏本</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-dot source-normal"></span>
+                                    <span>题库</span>
+                                </div>
+                            </div>
+                        </div> -->
                     </div>
                     
-                    <div class="config-grid">
-                        <div class="config-item">
-                            <label for="single-count-input">
-                                <i class="fas fa-dot-circle"></i>
-                                单选题数量
-                            </label>
-                            <div class="input-group">
-                                <input type="number" id="single-count-input" min="0" max="100" value="10">
-                                <span class="available-count">可用: <span id="single-available">0</span> 题</span>
-                            </div>
-                        </div>
-                        
-                        <div class="config-item">
-                            <label for="multiple-count-input">
-                                <i class="fas fa-check-square"></i>
-                                多选题数量
-                            </label>
-                            <div class="input-group">
-                                <input type="number" id="multiple-count-input" min="0" max="100" value="5">
-                                <span class="available-count">可用: <span id="multiple-available">0</span> 题</span>
-                            </div>
-                        </div>
-                        
-                        <div class="config-item">
-                            <label for="judge-count-input">
-                                <i class="fas fa-toggle-on"></i>
-                                判断题数量
-                            </label>
-                            <div class="input-group">
-                                <input type="number" id="judge-count-input" min="0" max="100" value="5">
-                                <span class="available-count">可用: <span id="judge-available">0</span> 题</span>
-                            </div>
-                        </div>
-                        
-                        <div class="config-item">
-                            <label for="fill-count-input">
-                                <i class="fas fa-pencil-alt"></i>
-                                填空题数量
-                            </label>
-                            <div class="input-group">
-                                <input type="number" id="fill-count-input" min="0" max="100" value="5">
-                                <span class="available-count">可用: <span id="fill-available">0</span> 题</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="exam-summary">
-                        <div class="summary-item">
-                            <span>总题目数：</span>
-                            <span id="total-exam-questions">25</span>
-                        </div>
-                        <div class="summary-item">
-                            <span>预计用时：</span>
-                            <span id="estimated-time">50分钟</span>
-                        </div>
+                    <div class="exam-panel-footer">
+                        <button id="cancel-exam-config" class="secondary-btn">取消</button>
+                        <button id="start-exam" class="primary-btn">开始考试</button>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button id="cancel-exam-config" class="secondary-btn">取消</button>
-                <button id="start-exam" class="primary-btn">开始考试</button>
+                
+                <!-- 考试记录面板 -->
+                <div id="exam-history-panel" class="exam-panel">
+                    <div class="exam-history-header">
+                        <h3><i class="fas fa-history"></i> 考试记录</h3>
+                        <button id="clear-exam-history" class="danger-btn small">
+                            <i class="fas fa-trash"></i>
+                            清空记录
+                        </button>
+                    </div>
+                    <div id="exam-history-list" class="exam-history-list">
+                        <!-- 考试记录将在这里动态生成 -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -467,7 +517,19 @@
                     <button id="clear-wrong-questions" class="danger-btn">清空错题本</button>
                 </div>
                 
-
+                <!-- 批量练习按钮区域 -->
+                <div class="batch-practice-section">
+                    <button id="practice-all-wrong" class="batch-practice-btn primary">
+                        <i class="fas fa-play-circle"></i>
+                        <span>全部练习</span>
+                        <small id="wrong-all-count">0题</small>
+                    </button>
+                    <button id="practice-wrong-by-type" class="batch-practice-btn">
+                        <i class="fas fa-filter"></i>
+                        <span>按题型练习</span>
+                        <small>筛选后练习</small>
+                    </button>
+                </div>
                 
                 <div id="wrong-questions-list" class="questions-list">
                     <!-- 错题列表将在这里显示 -->
@@ -494,7 +556,20 @@
                     </select>
                     <button id="clear-favorites" class="danger-btn">清空收藏</button>
                 </div>
-
+                
+                <!-- 批量练习按钮区域 -->
+                <div class="batch-practice-section">
+                    <button id="practice-all-favorites" class="batch-practice-btn primary">
+                        <i class="fas fa-play-circle"></i>
+                        <span>全部练习</span>
+                        <small id="favorites-all-count">0题</small>
+                    </button>
+                    <button id="practice-favorites-by-type" class="batch-practice-btn">
+                        <i class="fas fa-filter"></i>
+                        <span>按题型练习</span>
+                        <small>筛选后练习</small>
+                    </button>
+                </div>
                 
                 <div id="favorites-list" class="questions-list">
                     <!-- 收藏题目列表将在这里显示 -->
@@ -1423,6 +1498,43 @@
                     <i class="fas fa-times"></i> 取消
                 </button>
                 <button class="danger-btn" onclick="confirmClearFavorites()">
+                    <i class="fas fa-trash-alt"></i> 确认清空
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 清空考试记录确认对话框 -->
+    <div id="clear-exam-history-modal" class="modal hidden" data-closeable="false">
+        <div class="modal-content reset-confirm-content">
+            <div class="modal-header reset-confirm-header">
+                <h3><i class="fas fa-exclamation-triangle"></i> 清空考试记录确认</h3>
+                <span class="close-btn" onclick="hideClearExamHistoryModal()">×</span>
+            </div>
+            <div class="modal-body">
+                <div class="reset-confirm-info">
+                    <div class="warning-icon">
+                        ⚠️
+                    </div>
+                    <h4>确定要清空所有考试记录吗？</h4>
+                    <div class="reset-details">
+                        <p class="warning-text">此操作将：</p>
+                        <ul class="reset-list">
+                            <li><i class="fas fa-history"></i> 删除当前科目的所有考试记录</li>
+                            <li><i class="fas fa-exclamation-circle"></i> 此操作不可撤销</li>
+                        </ul>
+                    </div>
+                    <p class="danger-text">
+                        <i class="fas fa-exclamation-circle"></i>
+                        清空后将无法恢复，请谨慎操作！
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="secondary-btn" onclick="hideClearExamHistoryModal()">
+                    <i class="fas fa-times"></i> 取消
+                </button>
+                <button class="danger-btn" onclick="confirmClearExamHistory()">
                     <i class="fas fa-trash-alt"></i> 确认清空
                 </button>
             </div>

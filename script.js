@@ -420,18 +420,32 @@ function initEventListeners() {
     document.getElementById('close-exam-config').addEventListener('click', hideExamConfigModal);
     document.getElementById('cancel-exam-config').addEventListener('click', hideExamConfigModal);
     document.getElementById('start-exam').addEventListener('click', startConfiguredExam);
+    
+    // 考试面板切换事件
+    document.querySelectorAll('.exam-tab').forEach(tab => {
+        tab.addEventListener('click', () => switchExamTab(tab.dataset.tab));
+    });
+    
+    // 清空考试记录事件
+    document.getElementById('clear-exam-history').addEventListener('click', clearExamHistory);
 
     // 错题本模态框事件
     document.getElementById('close-wrong-questions').addEventListener('click', hideWrongQuestionsModal);
     document.getElementById('wrong-type-filter').addEventListener('change', filterWrongQuestions);
     document.getElementById('clear-wrong-questions').addEventListener('click', clearWrongQuestions);
     
-
+    // 错题本批量练习事件
+    document.getElementById('practice-all-wrong').addEventListener('click', practiceAllWrongQuestions);
+    document.getElementById('practice-wrong-by-type').addEventListener('click', practiceWrongQuestionsByType);
 
     // 收藏模态框事件
     document.getElementById('close-favorites').addEventListener('click', hideFavoritesModal);
     document.getElementById('favorite-type-filter').addEventListener('change', filterFavorites);
     document.getElementById('clear-favorites').addEventListener('click', clearFavorites);
+    
+    // 收藏批量练习事件
+    document.getElementById('practice-all-favorites').addEventListener('click', practiceAllFavorites);
+    document.getElementById('practice-favorites-by-type').addEventListener('click', practiceFavoritesByType);
 
 
     // 考试配置输入事件
@@ -742,7 +756,8 @@ function showAnalysis(question) {
 
 // 显示正确答案选项（绿色高亮）
 function showCorrectAnswerOptions(question) {
-    const questionType = isExamMode ? question._type : currentQuestionType;
+    // 批量练习模式或考试模式下使用题目自带的类型，否则使用当前题型
+    const questionType = (isExamMode || window.isBatchPractice) ? (question._type || currentQuestionType) : currentQuestionType;
     const correctAnswer = question.correctAnswer.trim().toUpperCase();
     
     if (questionType === 'single_choice' || questionType === 'multiple_choice') {
@@ -1087,13 +1102,13 @@ function updateStatisticsDisplay() {
         
         // 根据会员类型设置颜色
         if (membershipType === 'sssvip') {
-            membershipElement.style.color = '#ff6b6b';
+            membershipElement.style.color = '#a63ad1ff';
             membershipElement.style.fontWeight = 'bold';
         } else if (membershipType === 'svip') {
-            membershipElement.style.color = '#ffd700';
+            membershipElement.style.color = '#dd1c1cff';
             membershipElement.style.fontWeight = 'bold';
         } else if (membershipType === 'vip') {
-            membershipElement.style.color = '#4ecdc4';
+            membershipElement.style.color = '#ffd900ff';
             membershipElement.style.fontWeight = 'bold';
         } else {
             membershipElement.style.color = '';
@@ -2000,8 +2015,8 @@ function showQuestion() {
     // 滚动到顶部
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
-    // 检查非会员练习限制（仅在练习模式下）
-    if (!isExamMode) {
+    // 检查非会员练习限制（仅在练习模式下，且非批量练习模式）
+    if (!isExamMode && !window.isBatchPractice) {
         if (!checkPracticeLimit(currentQuestionType, currentQuestionIndex)) {
             return;
         }
@@ -2018,10 +2033,19 @@ function showQuestion() {
     }
 
     const question = currentQuestions[currentQuestionIndex];
-    const questionType = isExamMode ? question._type : currentQuestionType;
+    // 批量练习模式或考试模式下使用题目自带的类型，否则使用当前题型
+    const questionType = (isExamMode || window.isBatchPractice) ? (question._type || currentQuestionType) : currentQuestionType;
     
     // 更新题目信息
-    document.getElementById('question-number').textContent = `第${currentQuestionIndex + 1}题`;
+    const questionNumberEl = document.getElementById('question-number');
+    questionNumberEl.textContent = `第${currentQuestionIndex + 1}题`;
+    
+    // 根据题目来源设置题号颜色（仅在考试模式下）
+    questionNumberEl.classList.remove('source-wrong', 'source-favorite', 'source-normal');
+    if (isExamMode && question.source) {
+        questionNumberEl.classList.add(`source-${question.source}`);
+    }
+    
     document.getElementById('question-type-label').textContent = getTypeLabel(questionType);
     document.getElementById('question-text').textContent = question.title;
     
@@ -2365,7 +2389,8 @@ function autoNextQuestion() {
 function processAnswer() {
     const userAnswer = userAnswers[currentQuestionIndex];
     const question = currentQuestions[currentQuestionIndex];
-    const questionType = isExamMode ? question._type : currentQuestionType;
+    // 批量练习模式或考试模式下使用题目自带的类型，否则使用当前题型
+    const questionType = (isExamMode || window.isBatchPractice) ? (question._type || currentQuestionType) : currentQuestionType;
     const correctAnswer = question.correctAnswer.trim().toUpperCase();
     const userAnswerUpper = userAnswer.toString().trim().toUpperCase();
     
@@ -2397,12 +2422,14 @@ function processAnswer() {
         } else {
             removeFromWrongQuestions(questionType, question);
         }
-    } else if (isPracticingWrongQuestions) {
-        // 在练习错题本中的题目时，如果答对了就从错题本中移除
+    } else if (isPracticingWrongQuestions || (window.isBatchPractice && !window.isPracticingFavorites)) {
+        // 在练习错题本中的题目时（包括批量练习），如果答对了就从错题本中移除
         if (isCorrect) {
             removeFromWrongQuestions(questionType, question);
-            // 重置练习错题本标志
-            isPracticingWrongQuestions = false;
+            // 单题练习时重置标志，批量练习时不重置
+            if (!window.isBatchPractice) {
+                isPracticingWrongQuestions = false;
+            }
         }
     }
     
@@ -2689,7 +2716,8 @@ function removeFromWrongQuestions(type, question) {
 // 切换收藏状态
 function toggleFavorite() {
     const question = currentQuestions[currentQuestionIndex];
-    const questionType = isExamMode ? question._type : currentQuestionType;
+    // 批量练习模式或考试模式下使用题目自带的类型，否则使用当前题型
+    const questionType = (isExamMode || window.isBatchPractice) ? (question._type || currentQuestionType) : currentQuestionType;
     
     // 确保当前科目存在
     const subjectKey = currentSubject || '毛概';
@@ -2735,7 +2763,8 @@ function toggleFavorite() {
 function updateFavoriteButton() {
     const button = document.getElementById('favorite-btn');
     const question = currentQuestions[currentQuestionIndex];
-    const questionType = isExamMode ? question._type : currentQuestionType;
+    // 批量练习模式或考试模式下使用题目自带的类型，否则使用当前题型
+    const questionType = (isExamMode || window.isBatchPractice) ? (question._type || currentQuestionType) : currentQuestionType;
     
     // 获取当前科目
     const subjectKey = currentSubject || '毛概';
@@ -2823,6 +2852,8 @@ function returnToHome() {
     isExamMode = false;
     isReviewMode = false;
     isPracticingWrongQuestions = false; // 重置练习错题本标志
+    window.isPracticingFavorites = false; // 重置练习收藏本标志
+    window.isBatchPractice = false; // 重置批量练习标志
     examStartTime = null;
     examDuration = 0;
     
@@ -2920,13 +2951,16 @@ function showQuestionNumberModal() {
         btn.textContent = i + 1;
         btn.setAttribute('data-index', i);
         
+        const question = currentQuestions[i];
+        
+        // 题目导航不标记来源颜色，只在题号显示区域标记
+        
         // 设置题号状态样式
         if (i === currentQuestionIndex) {
             btn.classList.add('current'); // 当前题目
         } else if (isReviewMode || (isExamMode && judgedAnswers[i])) {
             // 查看详情模式或考试已判分状态：显示对错状态
             const userAnswer = userAnswers[i];
-            const question = currentQuestions[i];
             
             if (userAnswer === null || userAnswer === '') {
                 // 未作答：白色（默认样式）
@@ -2941,15 +2975,14 @@ function showQuestionNumberModal() {
                 }
             }
         } else if (isExamMode) {
-            // 考试模式下（未交卷）：只区分已作答（蓝色）和未作答
+            // 考试模式下（未交卷）：只区分已作答和未作答
             if (userAnswers[i] !== null && userAnswers[i] !== '') {
-                btn.classList.add('answered'); // 已作答（蓝色）
+                btn.classList.add('answered'); // 已作答
             }
             // 未作答的题目保持默认样式
         } else if (judgedAnswers[i]) {
             // 练习模式下：显示对错状态
             const userAnswer = userAnswers[i];
-            const question = currentQuestions[i];
             const correctAnswer = question.correctAnswer.trim().toUpperCase();
             const userAnswerUpper = userAnswer ? userAnswer.toString().trim().toUpperCase() : '';
             
@@ -3559,10 +3592,10 @@ async function showExamConfigModal() {
     document.getElementById('fill-available').textContent = statistics.fill_blank || 0;
     
     // 使用统计数据计算默认值
-    const maxSingle = Math.min(10, statistics.single_choice || 0);
-    const maxMultiple = Math.min(5, statistics.multiple_choice || 0);
-    const maxJudge = Math.min(5, statistics.true_false || 0);
-    const maxFill = Math.min(5, statistics.fill_blank || 0);
+    const maxSingle = Math.min(40, statistics.single_choice || 0);
+    const maxMultiple = Math.min(30, statistics.multiple_choice || 0);
+    const maxJudge = Math.min(30, statistics.true_false || 0);
+    const maxFill = Math.min(0, statistics.fill_blank || 0);
     
     document.getElementById('single-count-input').value = maxSingle;
     document.getElementById('multiple-count-input').value = maxMultiple;
@@ -3570,6 +3603,13 @@ async function showExamConfigModal() {
     document.getElementById('fill-count-input').value = maxFill;
     
     updateExamSummary();
+    
+    // 默认显示考试设置面板
+    switchExamTab('exam-settings');
+    
+    // 渲染考试记录
+    renderExamHistory();
+    
     document.getElementById('exam-config-modal').classList.remove('hidden');
     
     // 打开模态框时限制页面滚动，防止移动端滑动时出现白色区域
@@ -3581,6 +3621,19 @@ function hideExamConfigModal() {
     document.getElementById('exam-config-modal').classList.add('hidden');
     // 隐藏模态框时移除页面滚动限制
     document.body.classList.remove('modal-open');
+}
+
+// 切换考试面板
+function switchExamTab(tabId) {
+    // 更新标签状态
+    document.querySelectorAll('.exam-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === tabId);
+    });
+    
+    // 更新面板显示
+    document.querySelectorAll('.exam-panel').forEach(panel => {
+        panel.classList.toggle('active', panel.id === `${tabId}-panel`);
+    });
 }
 
 // 隐藏考试题目数超限提示模态框
@@ -3863,6 +3916,7 @@ function showWrongQuestionsModal() {
     const modal = document.getElementById('wrong-questions-modal');
     modal.classList.remove('hidden');
     renderWrongQuestions();
+    updateWrongQuestionsCount(); // 更新批量练习按钮的题目数量
     
     // 非会员提示
     if (!currentUser || currentUser.membershipType === '非会员') {
@@ -4037,6 +4091,7 @@ function showFavoritesModal() {
     const modal = document.getElementById('favorites-modal');
     modal.classList.remove('hidden');
     renderFavorites();
+    updateFavoritesCount(); // 更新批量练习按钮的题目数量
     
     // 非会员提示
     if (!currentUser || currentUser.membershipType === '非会员') {
@@ -4225,6 +4280,219 @@ function removeFavoriteQuestion(type, index) {
     showMessage('已从收藏移除', 'success');
 }
 
+// ==================== 批量练习功能 ====================
+
+// 获取错题本中的所有题目（可按题型筛选）
+function getWrongQuestionsForPractice(filterType = '') {
+    const subjectKey = currentSubject || '毛概';
+    
+    if (!wrongQuestions[subjectKey]) {
+        return [];
+    }
+    
+    let questions = [];
+    const types = ['single_choice', 'multiple_choice', 'true_false', 'fill_blank'];
+    
+    types.forEach(type => {
+        if (filterType && type !== filterType) return;
+        
+        if (wrongQuestions[subjectKey][type] && Array.isArray(wrongQuestions[subjectKey][type])) {
+            wrongQuestions[subjectKey][type].forEach(question => {
+                questions.push({
+                    ...question,
+                    _type: type // 标记题型，用于混合练习时识别
+                });
+            });
+        }
+    });
+    
+    return questions;
+}
+
+// 获取收藏本中的所有题目（可按题型筛选）
+function getFavoritesForPractice(filterType = '') {
+    const subjectKey = currentSubject || '毛概';
+    
+    if (!favorites[subjectKey]) {
+        return [];
+    }
+    
+    let questions = [];
+    const types = ['single_choice', 'multiple_choice', 'true_false', 'fill_blank'];
+    
+    types.forEach(type => {
+        if (filterType && type !== filterType) return;
+        
+        if (favorites[subjectKey][type] && Array.isArray(favorites[subjectKey][type])) {
+            favorites[subjectKey][type].forEach(question => {
+                questions.push({
+                    ...question,
+                    _type: type // 标记题型，用于混合练习时识别
+                });
+            });
+        }
+    });
+    
+    return questions;
+}
+
+// 开始批量练习（通用函数）
+function startBatchPractice(questions, source = 'wrong') {
+    if (!questions || questions.length === 0) {
+        showMessage('没有可练习的题目', 'warning');
+        return;
+    }
+    
+    // 随机打乱题目顺序
+    questions = shuffleArray([...questions]);
+    
+    currentQuestions = questions;
+    currentQuestionIndex = 0;
+    userAnswers = new Array(questions.length).fill(null);
+    judgedAnswers = new Array(questions.length).fill(false);
+    isExamMode = false;
+    isReviewMode = false;
+    
+    // 标记练习来源
+    isPracticingWrongQuestions = (source === 'wrong');
+    window.isPracticingFavorites = (source === 'favorites');
+    window.isBatchPractice = true; // 标记为批量练习模式
+    
+    // 关闭模态框
+    if (source === 'wrong') {
+        hideWrongQuestionsModal();
+    } else {
+        hideFavoritesModal();
+    }
+    
+    // 显示题目区域
+    document.getElementById('welcome-section').classList.add('hidden');
+    document.getElementById('question-type-section').classList.add('hidden');
+    document.getElementById('question-section').classList.remove('hidden');
+    toggleMobileFavoriteButton(true);
+    
+    // 移动端隐藏底部导航栏
+    if (window.innerWidth <= 768) {
+        const mobileBottomNav = document.querySelector('.mobile-bottom-nav');
+        if (mobileBottomNav) mobileBottomNav.style.display = 'none';
+    }
+    
+    showQuestion();
+    updateStatusDisplay();
+    
+    const sourceText = source === 'wrong' ? '错题本' : '收藏本';
+    showMessage(`开始${sourceText}练习，共${questions.length}道题`, 'success');
+}
+
+// 练习全部错题
+function practiceAllWrongQuestions() {
+    const questions = getWrongQuestionsForPractice();
+    startBatchPractice(questions, 'wrong');
+}
+
+// 按题型练习错题
+function practiceWrongQuestionsByType() {
+    const filterType = document.getElementById('wrong-type-filter').value;
+    
+    if (!filterType) {
+        showMessage('请先选择要练习的题型', 'warning');
+        return;
+    }
+    
+    const questions = getWrongQuestionsForPractice(filterType);
+    startBatchPractice(questions, 'wrong');
+}
+
+// 练习全部收藏
+function practiceAllFavorites() {
+    const questions = getFavoritesForPractice();
+    startBatchPractice(questions, 'favorites');
+}
+
+// 按题型练习收藏
+function practiceFavoritesByType() {
+    const filterType = document.getElementById('favorite-type-filter').value;
+    
+    if (!filterType) {
+        showMessage('请先选择要练习的题型', 'warning');
+        return;
+    }
+    
+    const questions = getFavoritesForPractice(filterType);
+    startBatchPractice(questions, 'favorites');
+}
+
+// 数组随机打乱（Fisher-Yates算法）
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+// 更新错题本批量练习按钮的题目数量显示
+function updateWrongQuestionsCount() {
+    const subjectKey = currentSubject || '毛概';
+    let totalCount = 0;
+    
+    if (wrongQuestions[subjectKey]) {
+        const types = ['single_choice', 'multiple_choice', 'true_false', 'fill_blank'];
+        types.forEach(type => {
+            if (wrongQuestions[subjectKey][type] && Array.isArray(wrongQuestions[subjectKey][type])) {
+                totalCount += wrongQuestions[subjectKey][type].length;
+            }
+        });
+    }
+    
+    const countElement = document.getElementById('wrong-all-count');
+    if (countElement) {
+        countElement.textContent = `${totalCount}题`;
+    }
+    
+    // 如果没有题目，禁用按钮
+    const practiceAllBtn = document.getElementById('practice-all-wrong');
+    const practiceByTypeBtn = document.getElementById('practice-wrong-by-type');
+    
+    if (practiceAllBtn) {
+        practiceAllBtn.disabled = totalCount === 0;
+    }
+    if (practiceByTypeBtn) {
+        practiceByTypeBtn.disabled = totalCount === 0;
+    }
+}
+
+// 更新收藏本批量练习按钮的题目数量显示
+function updateFavoritesCount() {
+    const subjectKey = currentSubject || '毛概';
+    let totalCount = 0;
+    
+    if (favorites[subjectKey]) {
+        const types = ['single_choice', 'multiple_choice', 'true_false', 'fill_blank'];
+        types.forEach(type => {
+            if (favorites[subjectKey][type] && Array.isArray(favorites[subjectKey][type])) {
+                totalCount += favorites[subjectKey][type].length;
+            }
+        });
+    }
+    
+    const countElement = document.getElementById('favorites-all-count');
+    if (countElement) {
+        countElement.textContent = `${totalCount}题`;
+    }
+    
+    // 如果没有题目，禁用按钮
+    const practiceAllBtn = document.getElementById('practice-all-favorites');
+    const practiceByTypeBtn = document.getElementById('practice-favorites-by-type');
+    
+    if (practiceAllBtn) {
+        practiceAllBtn.disabled = totalCount === 0;
+    }
+    if (practiceByTypeBtn) {
+        practiceByTypeBtn.disabled = totalCount === 0;
+    }
+}
+
 // 滚动到解析区域
 function scrollToAnalysis() {
     const feedbackElement = document.getElementById('answer-feedback');
@@ -4274,16 +4542,20 @@ function submitExam() {
     let totalCount = currentQuestions.length;
     const subjectKey = currentSubject || '毛概';
     
+    // 保存每道题的详情
+    const questionsDetail = [];
+    
     // 评判所有题目并处理错题本记录
     for (let i = 0; i < currentQuestions.length; i++) {
         const question = currentQuestions[i];
         const userAnswer = userAnswers[i];
         const questionType = question._type;
+        const correctAnswer = question.correctAnswer.trim().toUpperCase();
         
+        let isCorrect = false;
         if (userAnswer !== null && userAnswer !== '') {
-            const correctAnswer = question.correctAnswer.trim().toUpperCase();
             const userAnswerUpper = userAnswer.toString().trim().toUpperCase();
-            const isCorrect = userAnswerUpper === correctAnswer;
+            isCorrect = userAnswerUpper === correctAnswer;
             
             if (isCorrect) {
                 correctCount++;
@@ -4296,12 +4568,38 @@ function submitExam() {
                 addToWrongQuestions(questionType, question, userAnswer);
             }
         }
-        // 未作答的题目不记录到错题本
+        
+        // 保存题目详情
+        questionsDetail.push({
+            title: question.title,
+            type: questionType,
+            options: question.options || null,
+            correctAnswer: question.correctAnswer,
+            userAnswer: userAnswer,
+            isCorrect: isCorrect,
+            explanation: question.explanation || '',
+            source: question.source || 'normal'
+        });
     }
     
     const wrongCount = totalCount - correctCount;
     const accuracy = totalCount > 0 ? Math.round((correctCount / totalCount) * 100) : 0;
     const score = Math.round((correctCount / totalCount) * 100);
+    
+    // 计算用时
+    const usedTime = examStartTime ? Math.floor((Date.now() - examStartTime) / 1000) : 0;
+    
+    // 保存考试记录（包含题目详情）
+    saveExamRecord(subjectKey, {
+        score: score,
+        totalCount: totalCount,
+        correctCount: correctCount,
+        wrongCount: wrongCount,
+        accuracy: accuracy,
+        usedTime: usedTime,
+        date: new Date().toISOString(),
+        questions: questionsDetail
+    });
     
     // 显示考试结果
     showExamResultModal(score, totalCount, correctCount, wrongCount, accuracy);
@@ -7142,3 +7440,227 @@ function hideSubjectButton() {
     }
 }
 
+
+
+// ==================== 考试记录功能 ====================
+
+// 获取考试记录存储键
+function getExamHistoryKey(subject) {
+    return `exam_history_${subject}`;
+}
+
+// 获取考试记录
+function getExamHistory(subject) {
+    const key = getExamHistoryKey(subject);
+    const historyJson = localStorage.getItem(key);
+    if (historyJson) {
+        try {
+            return JSON.parse(historyJson);
+        } catch (e) {
+            return [];
+        }
+    }
+    return [];
+}
+
+// 保存考试记录
+function saveExamRecord(subject, record) {
+    const key = getExamHistoryKey(subject);
+    const history = getExamHistory(subject);
+    
+    // 添加新记录到开头
+    history.unshift(record);
+    
+    // 最多保留20条记录
+    if (history.length > 20) {
+        history.splice(20);
+    }
+    
+    localStorage.setItem(key, JSON.stringify(history));
+}
+
+// 清空考试记录
+function clearExamHistory() {
+    // 显示自定义确认对话框
+    document.getElementById('clear-exam-history-modal').classList.remove('hidden');
+    document.body.classList.add('modal-open');
+}
+
+// 隐藏清空考试记录确认对话框
+function hideClearExamHistoryModal() {
+    document.getElementById('clear-exam-history-modal').classList.add('hidden');
+    document.body.classList.remove('modal-open');
+}
+
+// 确认清空考试记录
+function confirmClearExamHistory() {
+    hideClearExamHistoryModal();
+    
+    const subjectKey = currentSubject || '毛概';
+    const key = getExamHistoryKey(subjectKey);
+    localStorage.removeItem(key);
+    renderExamHistory();
+    showMessage('考试记录已清空', 'success');
+}
+
+// 渲染考试记录列表
+function renderExamHistory() {
+    const container = document.getElementById('exam-history-list');
+    const subjectKey = currentSubject || '毛概';
+    const history = getExamHistory(subjectKey);
+    
+    if (history.length === 0) {
+        container.innerHTML = `
+            <div class="exam-history-empty">
+                <i class="fas fa-clipboard-list"></i>
+                <p>暂无考试记录</p>
+                <p style="font-size: 12px; margin-top: 8px;">完成模拟考试后，记录将显示在这里</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = history.map((record, index) => {
+        const scoreClass = getScoreClass(record.score);
+        const dateStr = formatExamDate(record.date);
+        const timeStr = formatExamTime(record.usedTime);
+        const hasDetail = record.questions && record.questions.length > 0;
+        
+        return `
+            <div class="exam-history-item">
+                <div class="exam-history-item-header">
+                    <span class="exam-history-date">
+                        <i class="fas fa-calendar-alt"></i>
+                        ${dateStr}
+                    </span>
+                    <span class="exam-history-score ${scoreClass}">${record.score}分</span>
+                </div>
+                <div class="exam-history-stats">
+                    <span class="exam-history-stat">
+                        <i class="fas fa-list-ol"></i>
+                        共${record.totalCount}题
+                    </span>
+                    <span class="exam-history-stat">
+                        <i class="fas fa-check"></i>
+                        对${record.correctCount}题
+                    </span>
+                    <span class="exam-history-stat">
+                        <i class="fas fa-times"></i>
+                        错${record.wrongCount}题
+                    </span>
+                    <span class="exam-history-stat">
+                        <i class="fas fa-clock"></i>
+                        ${timeStr}
+                    </span>
+                </div>
+                ${hasDetail ? `
+                <div class="exam-history-actions">
+                    <button class="exam-history-detail-btn" onclick="viewExamDetail(${index})">
+                        <i class="fas fa-eye"></i>
+                        <span>查看详情</span>
+                    </button>
+                </div>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+// 获取分数等级样式类
+function getScoreClass(score) {
+    if (score >= 90) return 'excellent';
+    if (score >= 70) return 'good';
+    if (score >= 60) return 'pass';
+    return 'fail';
+}
+
+// 格式化考试日期
+function formatExamDate(dateStr) {
+    const date = new Date(dateStr);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${month}月${day}日 ${hours}:${minutes}`;
+}
+
+// 格式化考试用时
+function formatExamTime(seconds) {
+    if (!seconds || seconds <= 0) return '未知';
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    if (minutes > 0) {
+        return `${minutes}分${secs}秒`;
+    }
+    return `${secs}秒`;
+}
+
+
+// 查看考试详情
+function viewExamDetail(recordIndex) {
+    const subjectKey = currentSubject || '毛概';
+    const history = getExamHistory(subjectKey);
+    
+    if (!history[recordIndex] || !history[recordIndex].questions) {
+        showMessage('该记录没有详细信息', 'warning');
+        return;
+    }
+    
+    const record = history[recordIndex];
+    
+    // 关闭考试配置模态框
+    hideExamConfigModal();
+    
+    // 加载历史记录的题目
+    currentQuestions = record.questions.map(q => ({
+        title: q.title,
+        options: q.options,
+        correctAnswer: q.correctAnswer,
+        explanation: q.explanation,
+        _type: q.type,
+        source: q.source
+    }));
+    
+    // 恢复用户答案
+    userAnswers = record.questions.map(q => q.userAnswer);
+    
+    // 标记所有题目为已评判
+    judgedAnswers = record.questions.map(() => true);
+    
+    currentQuestionIndex = 0;
+    isExamMode = true;
+    isReviewMode = true;
+    
+    // 显示题目区域
+    document.getElementById('welcome-section').classList.add('hidden');
+    document.getElementById('question-type-section').classList.add('hidden');
+    document.getElementById('question-section').classList.remove('hidden');
+    
+    // 隐藏科目按钮
+    hideSubjectButton();
+    
+    // 禁用提交按钮
+    document.getElementById('submit-btn').disabled = true;
+    
+    // 移动端处理
+    toggleMobileFavoriteButton(true);
+    if (window.innerWidth <= 768) {
+        const mobileBottomNav = document.querySelector('.mobile-bottom-nav');
+        if (mobileBottomNav) mobileBottomNav.style.display = 'none';
+    }
+    
+    // 隐藏顶部导航按钮
+    document.getElementById('home-btn').style.display = 'none';
+    document.getElementById('wrong-questions-btn').style.display = 'none';
+    document.getElementById('favorites-btn').style.display = 'none';
+    
+    // 显示考试导航栏
+    const examNav = document.getElementById('exam-nav');
+    examNav.classList.remove('hidden');
+    updateExamNavigation();
+    
+    showQuestion();
+    
+    const dateStr = formatExamDate(record.date);
+    showMessage(`正在查看 ${dateStr} 的考试记录`, 'info');
+}

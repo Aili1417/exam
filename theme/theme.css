@@ -589,6 +589,70 @@ body.minimal-theme .question-number.current {
     border: 2px solid #ffffff !important;
 }
 
+/* 题目来源颜色标识 - 极简主题 */
+body.minimal-theme .question-number-btn.source-wrong {
+    background: #3a2020 !important;
+    border-color: #ef4444 !important;
+    color: #ef4444 !important;
+}
+
+body.minimal-theme .question-number-btn.source-wrong.answered {
+    background: #ef4444 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .question-number-btn.source-favorite {
+    background: #3a3020 !important;
+    border-color: #f59e0b !important;
+    color: #f59e0b !important;
+}
+
+body.minimal-theme .question-number-btn.source-favorite.answered {
+    background: #f59e0b !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme #question-number.source-wrong {
+    color: #ffffff !important;
+}
+
+body.minimal-theme #question-number.source-favorite {
+    color: #ffffff !important;
+}
+
+/* 题目来源图例说明 - 极简主题 */
+body.minimal-theme .exam-source-legend {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: #444444 !important;
+}
+
+body.minimal-theme .exam-source-legend .legend-title {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .exam-source-legend .legend-title i {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .exam-source-legend .legend-item {
+    color: #cccccc !important;
+}
+
+body.minimal-theme .exam-source-legend .legend-dot.source-wrong {
+    background: #3a2020 !important;
+    border-color: #ef4444 !important;
+}
+
+body.minimal-theme .exam-source-legend .legend-dot.source-favorite {
+    background: #3a3020 !important;
+    border-color: #f59e0b !important;
+}
+
+body.minimal-theme .exam-source-legend .legend-dot.source-normal {
+    background: #2a2a2a !important;
+    border-color: #444444 !important;
+}
+
 /* 会员相关 */
 body.minimal-theme .membership-card {
     background: #2a2a2a !important;
@@ -927,9 +991,64 @@ body.minimal-theme .questions-list {
     background: #1a1a1a !important;
 }
 
+/* 批量练习按钮区域 - 极简主题 */
+body.minimal-theme .batch-practice-section {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)) !important;
+    border: 1px solid #444444 !important;
+}
+
+body.minimal-theme .batch-practice-btn {
+    background: #2a2a2a !important;
+    border: 2px solid #444444 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .batch-practice-btn i {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .batch-practice-btn span {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .batch-practice-btn small {
+    color: #aaaaaa !important;
+}
+
+body.minimal-theme .batch-practice-btn:hover {
+    background: #3a3a3a !important;
+    border-color: #666666 !important;
+}
+
+body.minimal-theme .batch-practice-btn.primary {
+    background: #ffffff !important;
+    border-color: #ffffff !important;
+}
+
+body.minimal-theme .batch-practice-btn.primary i,
+body.minimal-theme .batch-practice-btn.primary span {
+    color: #000000 !important;
+}
+
+body.minimal-theme .batch-practice-btn.primary small {
+    color: #333333 !important;
+}
+
+body.minimal-theme .batch-practice-btn.primary:hover {
+    background: #e0e0e0 !important;
+}
+
 body.minimal-theme .question-item {
     background: #2a2a2a !important;
     border: 1px solid #444444 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .question-item .question-item-text {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .question-item .question-item-answer {
     color: #ffffff !important;
 }
 
@@ -1369,4 +1488,141 @@ body.minimal-theme .toggle-password-btn:hover {
 
 body.minimal-theme .form-actions {
     background: transparent !important;
+}
+
+
+/* 考试面板切换 - 极简主题 */
+body.minimal-theme .exam-tabs {
+    background: #1a1a1a !important;
+    border-bottom-color: #444444 !important;
+}
+
+body.minimal-theme .exam-tab {
+    color: #aaaaaa !important;
+}
+
+body.minimal-theme .exam-tab:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.minimal-theme .exam-tab.active {
+    color: #ffffff !important;
+    border-bottom-color: #ffffff !important;
+}
+
+body.minimal-theme .exam-panel-footer {
+    border-top-color: #444444 !important;
+}
+
+/* 考试记录 - 极简主题 */
+body.minimal-theme .exam-history-header {
+    border-bottom-color: #444444 !important;
+}
+
+body.minimal-theme .exam-history-header h3 {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .exam-history-header h3 i {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .exam-history-item {
+    background: #2a2a2a !important;
+    border-color: #444444 !important;
+}
+
+body.minimal-theme .exam-history-item:hover {
+    background: #333333 !important;
+}
+
+body.minimal-theme .exam-history-date {
+    color: #aaaaaa !important;
+}
+
+body.minimal-theme .exam-history-date i {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .exam-history-stat {
+    color: #cccccc !important;
+}
+
+body.minimal-theme .exam-history-stat i {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .exam-history-empty {
+    color: #aaaaaa !important;
+}
+
+body.minimal-theme .exam-history-empty i {
+    color: #666666 !important;
+}
+
+
+/* 考试记录详情按钮 - 极简主题 */
+body.minimal-theme .exam-history-actions {
+    border-top-color: #444444 !important;
+}
+
+body.minimal-theme .exam-history-detail-btn {
+    background: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.minimal-theme .exam-history-detail-btn:hover {
+    background: #e0e0e0 !important;
+}
+
+
+/* 清空确认弹窗 - 极简主题 */
+body.minimal-theme .reset-confirm-info h4 {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .warning-text {
+    color: #ef4444 !important;
+}
+
+body.minimal-theme .reset-list li {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .reset-details {
+    background: rgba(239, 68, 68, 0.1) !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+/* 考试配置 - 极简主题 */
+body.minimal-theme .config-section h3 {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .config-desc {
+    color: #aaaaaa !important;
+}
+
+body.minimal-theme .config-item {
+    background: #2a2a2a !important;
+    border-color: #444444 !important;
+}
+
+body.minimal-theme .config-item label {
+    color: #ffffff !important;
+}
+
+body.minimal-theme .available-count {
+    color: #aaaaaa !important;
+}
+
+body.minimal-theme .config-item input {
+    background: #1a1a1a !important;
+    border-color: #444444 !important;
+    color: #ffffff !important;
+}
+
+body.minimal-theme .config-item input:focus {
+    border-color: #ffffff !important;
 }
