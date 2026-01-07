@@ -468,6 +468,9 @@ function initEventListeners() {
     // 题号选择模态框关闭事件
     document.getElementById('close-question-number-modal').addEventListener('click', hideQuestionNumberModal);
     
+    // 题目导航中的本次错题练习按钮事件
+    document.getElementById('nav-session-wrong-btn').addEventListener('click', startSessionWrongPractice);
+    
     // 修改模态框外部点击关闭逻辑，添加遮罩层阻止点击
     document.querySelectorAll('.modal').forEach(modal => {
         modal.addEventListener('click', (e) => {
@@ -2802,6 +2805,12 @@ function showExamResult() {
 
 // 返回主页
 function returnToHome() {
+    // 如果是本次错题练习模式，先询问是否返回原练习
+    if (window.isSessionWrongPractice && savedPracticeState) {
+        restoreOriginalPractice();
+        return;
+    }
+    
     document.getElementById('question-section').classList.add('hidden');
     document.getElementById('welcome-section').classList.remove('hidden');
     document.getElementById('question-type-section').classList.remove('hidden');
@@ -2854,6 +2863,8 @@ function returnToHome() {
     isPracticingWrongQuestions = false; // 重置练习错题本标志
     window.isPracticingFavorites = false; // 重置练习收藏本标志
     window.isBatchPractice = false; // 重置批量练习标志
+    window.isSessionWrongPractice = false; // 重置本次错题练习标志
+    savedPracticeState = null; // 清除保存的练习状态
     examStartTime = null;
     examDuration = 0;
     
@@ -2870,6 +2881,37 @@ function returnToHome() {
         // 如果题库数据不存在，重新加载
         updateStatisticsDisplay();
     }
+}
+
+// 恢复原始练习状态
+function restoreOriginalPractice() {
+    if (!savedPracticeState) {
+        returnToHome();
+        return;
+    }
+    
+    // 恢复原始练习状态
+    currentQuestions = savedPracticeState.questions;
+    currentQuestionIndex = savedPracticeState.questionIndex;
+    currentQuestionType = savedPracticeState.questionType;
+    userAnswers = savedPracticeState.answers;
+    judgedAnswers = savedPracticeState.judged;
+    window.isBatchPractice = savedPracticeState.isBatchPractice;
+    isPracticingWrongQuestions = savedPracticeState.isPracticingWrongQuestions;
+    window.isPracticingFavorites = savedPracticeState.isPracticingFavorites;
+    
+    // 清除本次错题练习状态
+    window.isSessionWrongPractice = false;
+    savedPracticeState = null;
+    
+    // 显示题目
+    showQuestion();
+    updateStatusDisplay();
+    
+    // 恢复后保存一次进度，确保状态同步
+    saveProgress();
+    
+    showMessage('已返回原练习', 'success');
 }
 
 // 重置考试导航栏
@@ -2944,6 +2986,9 @@ function showQuestionNumberModal() {
     // 清空容器
     container.innerHTML = '';
     
+    // 更新本次练习错题按钮的显示状态和数量
+    updateSessionWrongButton();
+    
     // 生成题号按钮
     for (let i = 0; i < currentQuestions.length; i++) {
         const btn = document.createElement('button');
@@ -3006,6 +3051,126 @@ function showQuestionNumberModal() {
     modal.classList.remove('hidden');
     // 打开模态框时限制页面滚动，防止移动端滑动时出现白色区域
     document.body.classList.add('modal-open');
+}
+
+// 更新题目导航中本次练习错题按钮的显示状态
+function updateSessionWrongButton() {
+    const section = document.getElementById('nav-session-wrong-section');
+    const countElement = document.getElementById('nav-session-wrong-count');
+    
+    if (!section || !countElement) return;
+    
+    // 考试模式或查看详情模式下隐藏
+    if (isExamMode || isReviewMode) {
+        section.style.display = 'none';
+        return;
+    }
+    
+    // 如果当前正在进行本次错题练习，隐藏按钮
+    if (window.isSessionWrongPractice) {
+        section.style.display = 'none';
+        return;
+    }
+    
+    // 统计本次练习中做错的题目数量
+    let wrongCount = 0;
+    for (let i = 0; i < currentQuestions.length; i++) {
+        if (judgedAnswers[i]) {
+            const userAnswer = userAnswers[i];
+            const correctAnswer = currentQuestions[i].correctAnswer.trim().toUpperCase();
+            const userAnswerUpper = userAnswer ? userAnswer.toString().trim().toUpperCase() : '';
+            
+            if (userAnswerUpper !== correctAnswer) {
+                wrongCount++;
+            }
+        }
+    }
+    
+    // 更新显示
+    countElement.textContent = `${wrongCount}题`;
+    section.style.display = 'block';
+    
+    // 如果没有错题，禁用按钮
+    const btn = document.getElementById('nav-session-wrong-btn');
+    if (btn) {
+        if (wrongCount === 0) {
+            btn.disabled = true;
+            btn.classList.add('disabled');
+        } else {
+            btn.disabled = false;
+            btn.classList.remove('disabled');
+        }
+    }
+}
+
+// 获取本次练习中做错的题目
+function getSessionWrongQuestions() {
+    let wrongList = [];
+    
+    for (let i = 0; i < currentQuestions.length; i++) {
+        if (judgedAnswers[i]) {
+            const userAnswer = userAnswers[i];
+            const correctAnswer = currentQuestions[i].correctAnswer.trim().toUpperCase();
+            const userAnswerUpper = userAnswer ? userAnswer.toString().trim().toUpperCase() : '';
+            
+            if (userAnswerUpper !== correctAnswer) {
+                wrongList.push({
+                    ...currentQuestions[i],
+                    _originalIndex: i, // 记录原始索引
+                    _type: currentQuestions[i]._type || currentQuestionType
+                });
+            }
+        }
+    }
+    
+    return wrongList;
+}
+
+// 保存的原始练习状态
+let savedPracticeState = null;
+
+// 从题目导航开始本次错题练习
+function startSessionWrongPractice() {
+    // 先关闭题目导航模态框
+    hideQuestionNumberModal();
+    
+    // 获取本次练习的错题
+    const wrongQuestionsList = getSessionWrongQuestions();
+    
+    if (!wrongQuestionsList || wrongQuestionsList.length === 0) {
+        showMessage('本次练习暂无错题', 'warning');
+        return;
+    }
+    
+    // 先保存当前练习进度到本地存储
+    saveProgress();
+    
+    // 保存当前练习状态到内存
+    savedPracticeState = {
+        questions: [...currentQuestions],
+        questionIndex: currentQuestionIndex,
+        questionType: currentQuestionType,
+        answers: [...userAnswers],
+        judged: [...judgedAnswers],
+        isBatchPractice: window.isBatchPractice,
+        isPracticingWrongQuestions: isPracticingWrongQuestions,
+        isPracticingFavorites: window.isPracticingFavorites
+    };
+    
+    // 设置本次错题练习的状态
+    currentQuestions = wrongQuestionsList;
+    currentQuestionIndex = 0;
+    userAnswers = new Array(wrongQuestionsList.length).fill(null);
+    judgedAnswers = new Array(wrongQuestionsList.length).fill(false);
+    isExamMode = false;
+    isReviewMode = false;
+    window.isSessionWrongPractice = true; // 标记为本次错题练习模式
+    window.isBatchPractice = true;
+    
+    showQuestion();
+    updateStatusDisplay();
+    
+    showMessage(`开始本次错题练习，共${wrongQuestionsList.length}道题`, 'success');
 }
 
 // 跳转到指定题目
@@ -3154,6 +3319,11 @@ function removeFromWrongQuestions(type, question) {
 
 // 保存进度
 function saveProgress() {
+    // 本次错题练习模式下不保存进度，避免覆盖原练习记录
+    if (window.isSessionWrongPractice) {
+        return;
+    }
+    
     if (!isExamMode && currentQuestionType) {
         // 非会员用户只能保存前30题的进度
         const maxSaveIndex = (!currentUser || currentUser.membershipType === '非会员') ? 29 : currentQuestions.length - 1;
