@@ -6186,7 +6186,11 @@ body.minimal-theme .exam-statistics .wrong-text {
 /* 访问量统计显示样式 */
 .visit-count-display {
     text-align: center;
-    margin: 10px 0 20px 0;
+    margin: 10px 0 8px 0;
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
 }
 
 .visit-count-stats {
@@ -6200,6 +6204,60 @@ body.minimal-theme .exam-statistics .wrong-text {
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     transition: all 0.3s ease;
+}
+
+/* 访问量内容容器 */
+.visit-count-content {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+/* 访问量单项 */
+.visit-count-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+/* 今日访问量和总访问量数字样式 */
+#today-visit-number,
+#total-visit-number {
+    font-weight: bold;
+    color: #ffffff;
+    font-size: 14px;
+    margin-left: 4px;
+}
+
+/* 在较小屏幕上的响应式调整 */
+@media (max-width: 480px) {
+    .visit-count-display {
+        gap: 8px !important;
+        margin: 8px 0 6px 0 !important;
+    }
+    
+    .visit-count-stats {
+        padding: 6px 12px !important;
+        font-size: 13px !important;
+    }
+    
+    .visit-count-content {
+        gap: 8px !important;
+    }
+    
+    .visit-count-stats i {
+        margin-right: 4px !important;
+        font-size: 12px !important;
+    }
+    
+    #today-visit-number,
+    #total-visit-number {
+        font-size: 12px !important;
+    }
 }
 
 .visit-count-stats:hover {
@@ -6232,4 +6290,36 @@ body.minimal-theme .visit-count-stats:hover {
 
 body.minimal-theme #visit-number {
     color: #ffffff !important;
+}
+
+/* 极简主题移动端优化 */
+@media (max-width: 480px) {
+    body.minimal-theme .visit-count-stats {
+        padding: 5px 10px !important;
+        font-size: 12px !important;
+    }
+    
+    body.minimal-theme .visit-count-content {
+        gap: 6px !important;
+    }
+    
+    body.minimal-theme #today-visit-number,
+    body.minimal-theme #total-visit-number {
+        font-size: 11px !important;
+    }
+}
+
+/* 极简主题下的访问量内容样式 */
+body.minimal-theme .visit-count-content {
+    gap: 12px !important;
+}
+
+body.minimal-theme .visit-count-item {
+    justify-content: center !important;
+}
+
+body.minimal-theme #today-visit-number,
+body.minimal-theme #total-visit-number {
+    color: #ffffff !important;
+    font-weight: 600 !important;
 }
