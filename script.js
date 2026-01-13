@@ -3868,8 +3868,14 @@ function updateExamSummary() {
     document.getElementById('total-exam-questions').textContent = totalQuestions;
     document.getElementById('estimated-time').textContent = estimatedTime + '分钟';
     
-    // 检查总题目数是否超过100道限制
-    const totalLimitExceeded = totalQuestions > 100;
+    // 检查用户是否为SSSVIP用户，SSSVIP用户不受100题限制
+    const isSSSVIPUser = currentUser && 
+        (currentUser.membershipType === 'sssvip' || 
+         currentUser.membershipType === 'SSSVIP' || 
+         currentUser.membershipType?.toUpperCase() === 'SSSVIP');
+    
+    // 检查总题目数是否超过100道限制（SSSVIP用户不受此限制）
+    const totalLimitExceeded = !isSSSVIPUser && totalQuestions > 100;
     if (totalLimitExceeded) {
         document.getElementById('total-exam-questions').style.color = '#ef4444';
         document.getElementById('estimated-time').style.color = '#ef4444';
@@ -3882,16 +3888,94 @@ function updateExamSummary() {
     const startBtn = document.getElementById('start-exam');
     let canStart = totalQuestions > 0;
     
-    // 如果总题目数超过限制，显示提示信息
+    // 如果总题目数超过限制，显示提示信息（SSSVIP用户不显示此限制）
     if (totalLimitExceeded) {
         document.getElementById('total-exam-questions').title = '单次考试总题目数不得超过100道题';
         document.getElementById('estimated-time').title = '单次考试总题目数不得超过100道题';
+    } else if (isSSSVIPUser) {
+        // SSSVIP用户显示特殊提示
+        document.getElementById('total-exam-questions').title = 'SSSVIP用户可享受无限制考试题目数量';
+        document.getElementById('estimated-time').title = 'SSSVIP用户可享受无限制考试题目数量';
     } else {
         document.getElementById('total-exam-questions').title = '';
         document.getElementById('estimated-time').title = '';
     }
     
     startBtn.disabled = !canStart;
+    
+    // 动态更新HTML中的考试限制提示
+    updateExamLimitTip(isSSSVIPUser);
+}
+
+// 动态更新考试限制提示信息
+function updateExamLimitTip(isSSSVIPUser) {
+    const examLimitTip = document.getElementById('exam-limit-tip');
+    const examLimitText = document.getElementById('exam-limit-text');
+    
+    if (!examLimitTip || !examLimitText) return;
+    
+    if (isSSSVIPUser) {
+        // SSSVIP用户显示特殊提示
+        examLimitText.textContent = 'SSSVIP用户可享受无限制考试题目数量';
+        examLimitTip.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        examLimitTip.style.color = 'white';
+        examLimitTip.querySelector('i').className = 'fas fa-crown';
+    } else {
+        // 普通用户显示标准提示
+        examLimitText.textContent = '单次考试总题目数不得超过100道题';
+        examLimitTip.style.background = '';
+        examLimitTip.style.color = '';
+        examLimitTip.querySelector('i').className = 'fas fa-info-circle';
+    }
+}
+
+// 更新考试限制超限模态框内容
+function updateExamLimitModal(totalQuestions) {
+    const modalIcon = document.getElementById('limit-modal-icon');
+    const modalTitle = document.getElementById('limit-modal-title');
+    const modalContent = document.getElementById('limit-modal-content');
+    const modalSuggestion = document.getElementById('limit-modal-suggestion');
+    const currentTotalSpan = document.getElementById('current-total-questions');
+    
+    if (!modalIcon || !modalTitle || !modalContent || !modalSuggestion) return;
+    
+    // 检查用户是否为SSSVIP用户
+    const isSSSVIPUser = currentUser && 
+        (currentUser.membershipType === 'sssvip' || 
+         currentUser.membershipType === 'SSSVIP' || 
+         currentUser.membershipType?.toUpperCase() === 'SSSVIP');
+    
+    if (isSSSVIPUser) {
+        // SSSVIP用户不应该看到超限模态框，但以防万一
+        modalIcon.textContent = '👑';
+        modalIcon.style.color = '#a63ad1';
+        modalTitle.textContent = 'SSSVIP特权';
+        modalTitle.style.color = '#a63ad1';
+        modalContent.innerHTML = `恭喜！作为SSSVIP用户，您不受考试题目数量限制。<br/>
+                                  当前设置的总题目数为 <span style="font-weight: bold; color: #a63ad1;">${totalQuestions}</span> 道题。<br/>
+                                  您可以尽情享受无限制的考试体验。`;
+        modalSuggestion.style.background = 'linear-gradient(135deg, #a63ad1 0%, #667eea 100%)';
+        modalSuggestion.style.borderLeft = '4px solid #a63ad1';
+        modalSuggestion.querySelector('p').style.color = 'white';
+        modalSuggestion.querySelector('p').innerHTML = '💎 SSSVIP特权：无限考试题目数量，尽情挑战！';
+    } else {
+        // 普通用户显示标准超限信息
+        modalIcon.textContent = '⚠️';
+        modalIcon.style.color = '#ef4444';
+        modalTitle.textContent = '题目数超过限制';
+        modalTitle.style.color = '#1f2937';
+        modalContent.innerHTML = `单次考试总题目数不得超过100道题。<br/>
+                                  当前设置的总题目数为 <span style="font-weight: bold; color: #ef4444;">${totalQuestions}</span> 道题。<br/>
+                                  请调整题目数量后重新开始考试。`;
+        modalSuggestion.style.background = '#fef3c7';
+        modalSuggestion.style.borderLeft = '4px solid #f59e0b';
+        modalSuggestion.querySelector('p').style.color = '#92400e';
+        modalSuggestion.querySelector('p').innerHTML = '💡 建议：您可以适当减少各题型的题目数量，确保总题目数不超过100道题。';
+    }
+    
+    if (currentTotalSpan) {
+        currentTotalSpan.textContent = totalQuestions;
+    }
 }
 
 // 开始配置的模拟考试
@@ -3934,10 +4018,17 @@ function startConfiguredExam() {
     
     const totalQuestions = singleCount + multipleCount + judgeCount + fillCount;
     
-    // 检查总题目数是否超过100道限制
-    if (totalQuestions > 100) {
+    // 检查用户是否为SSSVIP用户，SSSVIP用户不受100题限制
+    const isSSSVIPUser = currentUser && 
+        (currentUser.membershipType === 'sssvip' || 
+         currentUser.membershipType === 'SSSVIP' || 
+         currentUser.membershipType?.toUpperCase() === 'SSSVIP');
+    
+    // 检查总题目数是否超过100道限制（SSSVIP用户不受此限制）
+    if (!isSSSVIPUser && totalQuestions > 100) {
+        // 更新超限提示模态框的内容
+        updateExamLimitModal(totalQuestions);
         // 显示超限提示模态框
-        document.getElementById('current-total-questions').textContent = totalQuestions;
         document.getElementById('exam-limit-modal').classList.remove('hidden');
         return;
     }

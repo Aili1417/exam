@@ -371,9 +371,9 @@
                     <div class="config-section">
                         <h3><i class="fas fa-cog"></i> 题目数量配置</h3>
                         <p class="config-desc">请设置各题型的题目数量（设置为0表示不包含该题型）</p>
-                        <div class="exam-limit-tip">
+                        <div class="exam-limit-tip" id="exam-limit-tip">
                             <i class="fas fa-info-circle"></i>
-                            <span>单次考试总题目数不得超过100道题</span>
+                            <span id="exam-limit-text">单次考试总题目数不得超过100道题</span>
                         </div>
                         
                         <div class="config-grid">
@@ -484,16 +484,16 @@
             </div>
             <div class="modal-body">
                 <div style="text-align: center; padding: 20px 0;">
-                    <div style="font-size: 48px; color: #ef4444; margin-bottom: 16px;">
+                    <div style="font-size: 48px; color: #ef4444; margin-bottom: 16px;" id="limit-modal-icon">
                         ⚠️
                     </div>
-                    <h4 style="color: #1f2937; margin-bottom: 12px;">题目数超过限制</h4>
-                    <p style="color: #6b7280; margin-bottom: 20px; line-height: 1.6;">
+                    <h4 style="color: #1f2937; margin-bottom: 12px;" id="limit-modal-title">题目数超过限制</h4>
+                    <p style="color: #6b7280; margin-bottom: 20px; line-height: 1.6;" id="limit-modal-content">
                         单次考试总题目数不得超过100道题。<br/>
                         当前设置的总题目数为 <span id="current-total-questions" style="font-weight: bold; color: #ef4444;">0</span> 道题。<br/>
                         请调整题目数量后重新开始考试。
                     </p>
-                    <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px;">
+                    <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px;" id="limit-modal-suggestion">
                         <p style="color: #92400e; margin: 0; font-size: 14px;">
                             💡 建议：您可以适当减少各题型的题目数量，确保总题目数不超过100道题。
                         </p>
