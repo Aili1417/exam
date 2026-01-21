@@ -13,6 +13,10 @@
             // 检查是否已经有emailjs全局变量
             if (typeof window.emailjs !== 'undefined') {
                 emailjsLoaded = true;
+                // 通知资源状态管理器EmailJS已加载
+                if (window.resourceStatusManager) {
+                    window.resourceStatusManager.updateStatus('emailjs', 'success', 'EmailJS 静默加载成功');
+                }
                 resolve(true);
                 return;
             }
@@ -25,8 +29,11 @@
             };
             testImage.onerror = () => {
                 // 网络不可用，直接使用后备方案
-   
                 emailjsLoaded = true;
+                // 通知资源状态管理器使用后备方案
+                if (window.resourceStatusManager) {
+                    window.resourceStatusManager.updateStatus('emailjs', 'fallback', 'EmailJS 使用后备方案');
+                }
                 resolve(true);
             };
             
@@ -50,7 +57,10 @@
                             if (iframe.contentWindow.emailjs) {
                                 window.emailjs = iframe.contentWindow.emailjs;
                                 emailjsLoaded = true;
-                           
+                                // 通知资源状态管理器
+                                if (window.resourceStatusManager) {
+                                    window.resourceStatusManager.updateStatus('emailjs', 'success', 'EmailJS 从iframe加载成功');
+                                }
                             }
                             document.body.removeChild(iframe);
                             resolve(true);
@@ -59,8 +69,10 @@
                         script.onerror = () => {
                             // 加载失败，使用后备方案
                             document.body.removeChild(iframe);
-                    
-                            emailjsLoaded = true;
+                            // 通知资源状态管理器
+                            if (window.resourceStatusManager) {
+                                window.resourceStatusManager.updateStatus('emailjs', 'fallback', 'EmailJS 静默加载失败，使用后备方案');
+                            }
                             resolve(true);
                         };
                         
@@ -70,8 +82,10 @@
                     } catch (e) {
                         // 任何错误都回退到后备方案
                         document.body.removeChild(iframe);
-               
-                        emailjsLoaded = true;
+                        // 通知资源状态管理器
+                        if (window.resourceStatusManager) {
+                            window.resourceStatusManager.updateStatus('emailjs', 'fallback', 'EmailJS iframe加载失败，使用后备方案');
+                        }
                         resolve(true);
                     }
                 };
@@ -80,8 +94,10 @@
                     if (iframe.parentNode) {
                         document.body.removeChild(iframe);
                     }
-    
-                    emailjsLoaded = true;
+                    // 通知资源状态管理器
+                    if (window.resourceStatusManager) {
+                        window.resourceStatusManager.updateStatus('emailjs', 'fallback', 'EmailJS iframe创建失败，使用后备方案');
+                    }
                     resolve(true);
                 };
                 

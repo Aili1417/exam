@@ -33,7 +33,7 @@ class InvitationLotteryActivity {
             // 绑定事件
             this.bindEvents();
             
-            console.log('✅ 邀请抽奖活动模块初始化成功');
+    
             return { success: true };
         } catch (error) {
             console.error('❌ 邀请抽奖活动模块初始化失败:', error);
@@ -179,11 +179,7 @@ class InvitationLotteryActivity {
                         activityUser.set('guaranteeCount', 0);
                     }
                     await activityUser.save();
-                    console.log('✅ 补充了缺失的抽奖字段', {
-                        remaining: activityUser.get('remainingLotteryChances'),
-                        total: activityUser.get('totalLotteryChances'),
-                        records: recordsCount
-                    });
+                   
                 }
                 
                 this.currentActivityUser = activityUser;
@@ -597,7 +593,7 @@ class InvitationLotteryActivity {
                 localStorage.setItem('examUser', JSON.stringify(window.leanCloudClient.currentUser));
             }
 
-            console.log(`✅ 会员奖励发放成功：${days}天`);
+           
         } catch (error) {
             console.error('发放会员奖励失败:', error);
         }
@@ -845,11 +841,7 @@ class InvitationLotteryActivity {
             
             try {
                 await this.currentActivityUser.save();
-                console.log('🔧 修复了totalLotteryChances数据:', {
-                    old: totalChances,
-                    new: recordsCount,
-                    records: recordsCount
-                });
+               
             } catch (error) {
                 console.error('修复数据失败:', error);
             }
@@ -861,7 +853,7 @@ class InvitationLotteryActivity {
      */
     debugUserData() {
         if (!this.currentActivityUser) {
-            console.log('❌ 没有当前活动用户数据');
+           
             return;
         }
 

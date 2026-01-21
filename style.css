@@ -449,6 +449,11 @@ body {
         max-width: 300px;
         justify-content: center;
     }
+    
+    /* 移动端隐藏题型支持说明 */
+    .welcome-card.question-types-card {
+        display: none !important;
+    }
 }
 
 .welcome-content {

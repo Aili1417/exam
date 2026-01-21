@@ -14,6 +14,11 @@ let isReviewMode = false; // 查看详情模式
 let isPracticingWrongQuestions = false; // 是否在练习错题本中的题目
 let favorites = {}; // 收藏题目
 let wrongQuestions = {}; // 错题本
+
+let practiceWrongQuestions = []; // 临时错题练习本（本次练习产生的错题）
+let practiceWrongCount = 0; // 临时错题练习本数量
+let isSessionWrongPractice = false; // 是否在本次错题练习中
+let savedPracticeState = null; // 保存的练习状态（用于从本次错题返回）
 let statistics = {
     total: 0,
     single_choice: 0,
@@ -79,14 +84,12 @@ async function initEmailJS() {
                 
                 emailjs.init(publicKey);
                 window.emailjsInitialized = true; // 标记已初始化
-                console.log('EmailJS初始化成功');
+                
                 return true;
             } catch (error) {
-     
                 return false;
             }
         } else {
-
             return false;
         }
     } catch (error) {
@@ -286,7 +289,7 @@ function initEventListeners() {
     document.querySelectorAll('[data-type]').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             requireLogin(async () => {
-                await withMembershipCheck(() => handleTypeButtonClick(e), '进入练习模式');
+                await withMembershipCheck(async () => await handleTypeButtonClick(e), '进入练习模式');
             });
         });
     });
@@ -336,6 +339,13 @@ function initEventListeners() {
     // 用户系统事件（会员状态检查）
     document.getElementById('user-center-btn').addEventListener('click', async () => {
         if (currentUser) {
+            // 检查会员状态并触发会话检测
+            if (currentUser.membershipType === 'vip' || currentUser.membershipType === 'svip' || currentUser.membershipType === 'sssvip') {
+                const sessionCheckResult = await triggerSessionCheck('打开个人中心');
+                if (!sessionCheckResult.success) {
+                    return; // 会话过期时不继续执行
+                }
+            }
             await withMembershipCheck(showUserCenterModal, '打开个人中心');
         } else {
             showUserCenterModal();
@@ -348,7 +358,7 @@ function initEventListeners() {
     // 科目选择相关事件
     document.getElementById('subject-selector-btn').addEventListener('click', handleSubjectSelectorClick);
     document.getElementById('close-subject-selector').addEventListener('click', hideSubjectSelectorModal);
-    document.getElementById('confirm-subject-selection').addEventListener('click', confirmSubjectSelection);
+    document.getElementById('confirm-subject-selection').addEventListener('click', async () => await confirmSubjectSelection());
     
     // 修改密码相关事件
     document.getElementById('change-password-btn').addEventListener('click', showChangePasswordModal);
@@ -389,6 +399,11 @@ function initEventListeners() {
     document.getElementById('register-username').addEventListener('input', updateEmailAddress);
     document.getElementById('email-domain').addEventListener('change', updateEmailAddress);
     
+
+    
+    // 会员系统事件
+    document.getElementById('membership-btn').addEventListener('click', showMembershipModal);
+    
     // 数据导入和同步（需要登录）
     document.getElementById('import-data-btn').addEventListener('click', () => {
         requireLogin(importDataFromCloud);
@@ -396,9 +411,6 @@ function initEventListeners() {
     document.getElementById('sync-data-btn').addEventListener('click', () => {
         requireLogin(syncDataToCloud);
     });
-    
-    // 会员系统事件
-    document.getElementById('membership-btn').addEventListener('click', showMembershipModal);
     
     // CDK激活按钮事件
     document.getElementById('activate-cdk-btn').addEventListener('click', handleCDKActivation);
@@ -934,10 +946,50 @@ async function loadEnabledSubjects() {
 
         // 降级方案：使用默认科目
         enabledSubjects = [
-            { name: '毛概', displayName: '毛泽东思想概论', icon: '🏛️', isDefault: true, questionCollection: 'Question_MaoGai' },
-            { name: '思修', displayName: '思想道德修养', icon: '💭', isDefault: true, questionCollection: 'Question_SiXiu' },
-            { name: '近代史', displayName: '中国近现代史纲要', icon: '📜', isDefault: true, questionCollection: 'Question_JinDaiShi' },
-            { name: '马原', displayName: '马克思主义基本原理', icon: '⚡', isDefault: true, questionCollection: 'Question_MaYuan' }
+            { 
+                id: 'maogai', 
+                name: '毛概', 
+                displayName: '毛泽东思想概论', 
+                icon: '🏛️', 
+                description: '',
+                order: 1,
+                isDefault: true, 
+                isEnabled: true,
+                questionCollection: 'Question_MaoGai' 
+            },
+            { 
+                id: 'sixiu', 
+                name: '思修', 
+                displayName: '思想道德修养', 
+                icon: '💭', 
+                description: '',
+                order: 2,
+                isDefault: true, 
+                isEnabled: true,
+                questionCollection: 'Question_SiXiu' 
+            },
+            { 
+                id: 'jindaishi', 
+                name: '近代史', 
+                displayName: '中国近现代史纲要', 
+                icon: '📜', 
+                description: '',
+                order: 3,
+                isDefault: true, 
+                isEnabled: true,
+                questionCollection: 'Question_JinDaiShi' 
+            },
+            { 
+                id: 'mayuan', 
+                name: '马原', 
+                displayName: '马克思主义基本原理', 
+                icon: '⚡', 
+                description: '',
+                order: 4,
+                isDefault: true, 
+                isEnabled: true,
+                questionCollection: 'Question_MaYuan' 
+            }
         ];
         subjectsLoaded = true;
         renderSubjectSelector();
@@ -960,7 +1012,7 @@ function renderSubjectSelector() {
     enabledSubjects.forEach(subject => {
         const option = document.createElement('div');
         option.className = 'subject-option';
-        option.setAttribute('data-subject', subject.name);
+        option.setAttribute('data-subject', JSON.stringify(subject));
         
         // 使用默认图标或通用图标
         const icon = subject.icon || '📚';
@@ -981,7 +1033,7 @@ function renderSubjectSelector() {
             });
             // 添加当前选项的选中状态
             option.classList.add('selected');
-            selectedSubjectOption = subject.name;
+            selectedSubjectOption = subject;
         });
         
         container.appendChild(option);
@@ -995,31 +1047,47 @@ async function loadQuestionsFromCloud() {
     try {
         showLoading('正在加载数据...');
         
-        // 使用新的getAllQuestions方法，它会从各科目的集合中加载题目
-        const result = await window.leanCloudClient.getAllQuestions();
-        if (!result.success) {
-            throw new Error(result.message);
+        // 加载保存的科目选择
+        // 只加载当前选中的科目的题目（减少请求）
+        let result;
+        if (currentSubject && currentSubject.name) {
+            // 使用新的方法，只加载当前科目的题目
+            result = await window.leanCloudClient.getCurrentSubjectQuestions(currentSubject);
+            if (!result.success) {
+                throw new Error(result.message);
+            }
+            allQuestionsData = result.data;
+        } else {
+            // 如果没有选择科目，先加载科目列表，然后加载第一个科目
+            await loadEnabledSubjects();
+            if (enabledSubjects && enabledSubjects.length > 0) {
+                currentSubject = enabledSubjects[0];
+                saveCurrentSubject(currentSubject);
+                result = await window.leanCloudClient.getCurrentSubjectQuestions(currentSubject);
+                if (!result.success) {
+                    throw new Error(result.message);
+                }
+                allQuestionsData = result.data;
+            } else {
+                // 降级处理，使用空数据
+                allQuestionsData = {
+                    single_choice: [],
+                    multiple_choice: [],
+                    true_false: [],
+                    fill_blank: []
+                };
+            }
         }
-        
-        // result.data 是按题型分组的数据（兼容旧结构）
-        // result.dataBySubject 是按科目分组的数据（新结构）
-        
-        // 直接使用result.data，它已经按题型分组了
-        allQuestionsData = result.data;
         
      
         
         // 加载保存的科目选择
         loadCurrentSubject();
         
-        // 根据当前科目过滤题目数据
-        filterQuestionsBySubject();
+        // 题目已经按科目加载，直接使用
+        questionsData = { ...allQuestionsData };
 
-        const totalQuestions = (allQuestionsData.single_choice?.length || 0) + 
-                              (allQuestionsData.multiple_choice?.length || 0) + 
-                              (allQuestionsData.true_false?.length || 0) + 
-                              (allQuestionsData.fill_blank?.length || 0);
-        updateStatus(`已加载 ${totalQuestions} 个题目`, 'success');
+        updateStatus(`已加载 ${currentSubject?.name || '当前'} 科目题目`, 'success');
         
         // 立即从加载的数据中计算统计信息，避免后续的重复计算和请求
         calculateStatisticsFromData();
@@ -1274,33 +1342,22 @@ async function checkCurrentUserMembershipStatus() {
     if (isExpired) {
         
         try {
-            // 立即显示过期确认弹窗
+            // 立即显示过期确认弹窗（与小程序的逻辑保持一致）
             const userChoice = await showMembershipExpiredConfirmModal();
             
-            if (userChoice.action === 'confirm') {
-                // 用户确认过期，开始处理
-                const success = await handleMembershipExpiry(currentUser, false); // 传递false表示不再显示弹窗
-                if (success) {
-                    return { 
-                        needsAction: true, 
-                        message: '您的会员已过期，已强制退出登录。',
-                        action: 'expired'
-                    };
-                } else {
-                    // 如果处理失败，强制退出登录
-                    await handleLogout();
-                    return { 
-                        needsAction: true, 
-                        message: '会员状态异常，请重新登录。',
-                        action: 'logout'
-                    };
-                }
-            } else {
+            if (userChoice.action === 'later') {
                 // 用户选择稍后处理，返回但标记需要处理
                 return { 
                     needsAction: true, 
                     message: '会员已过期，请尽快处理。',
                     action: 'expired_pending'
+                };
+            } else if (userChoice.action === 'upgrade') {
+                // 用户选择升级会员
+                return { 
+                    needsAction: true, 
+                    message: '正在跳转到会员升级页面...',
+                    action: 'upgrade'
                 };
             }
         } catch (error) {
@@ -1324,11 +1381,16 @@ async function withMembershipCheck(callback, actionName = '执行操作') {
     
     if (statusCheck.needsAction) {
         // 如果需要处理会员过期或退出登录，不执行原操作
-        if (statusCheck.action === 'expired') {
-            // 会员过期时已经强制退出登录，不执行原操作
-            return false;
-        } else if (statusCheck.action === 'logout') {
+        if (statusCheck.action === 'logout') {
             showMessage(statusCheck.message, 'error');
+            // 不执行原操作
+            return false;
+        } else if (statusCheck.action === 'expired_pending') {
+            showMessage(statusCheck.message, 'warning');
+            // 不执行原操作
+            return false;
+        } else if (statusCheck.action === 'upgrade') {
+            showMessage(statusCheck.message, 'info');
             // 不执行原操作
             return false;
         }
@@ -1379,66 +1441,69 @@ async function handleMembershipExpiry(user, showNotification = true) {
     }
 }
 
-// 清理本地存储（保留examUser）
+// 清理学习相关的本地数据（与小程序的clearLocalLearningData保持一致）
+function clearLocalLearningData() {
+    try {
+        // 获取所有存储键
+        const allStorageKeys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            allStorageKeys.push(localStorage.key(i));
+        }
+        
+        const keysToRemove = [];
+        
+        allStorageKeys.forEach(key => {
+            // 清理进度、错题、收藏等学习数据（与小程序的逻辑保持一致）
+            if (key.startsWith('practice_progress_') ||
+                key.startsWith('exam_wrong_questions_') ||
+                key.startsWith('exam_favorites_') ||
+                key.startsWith('exam_question_history_') ||
+                key.startsWith('practice_session_wrong_')) {
+                keysToRemove.push(key);
+            }
+        });
+        
+       
+        
+        // 清理存储项
+        keysToRemove.forEach(key => {
+            localStorage.removeItem(key);
+        });
+        
+   
+    } catch (error) {
+        console.error('清理本地数据失败:', error);
+    }
+}
+
+// 保留旧函数名以兼容现有调用
 function clearLocalStorageExceptUser() {
-
-    
-    const examUser = localStorage.getItem('examUser');
-
-    
-    // 显示清理前的存储内容
-
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key) {
-            console.log(`  - ${key}: ${localStorage.getItem(key)?.substring(0, 100)}...`);
-        }
-    }
-    
-    // 获取所有需要清理的存储项
-    const keysToRemove = [];
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key !== 'examUser') {
-            keysToRemove.push(key);
-        }
-    }
-    
-
-    
-    // 清理存储项
-    keysToRemove.forEach(key => {
-        localStorage.removeItem(key);
-    
-    });
-    
-    // 恢复examUser
-    if (examUser) {
-        localStorage.setItem('examUser', examUser);
-    
-    }
-    
-
+    clearLocalLearningData();
 }
 
 // 删除重复的showMembershipExpiredNotification函数，统一使用showMembershipExpiredLoginNotification
 
-// 显示会员时间不足一小时的提醒
+// 显示会员时间不足一小时的提醒（与小程序的showExpiryWarning保持一致）
 function showMembershipExpiryWarning(timeRemaining) {
     return new Promise((resolve) => {
         const modal = document.createElement('div');
         modal.className = 'modal';
         modal.setAttribute('data-closeable', 'false');
         
-        // 计算剩余时间显示
+        // 计算剩余时间显示（与小程序保持一致）
         const minutes = Math.floor(timeRemaining / (1000 * 60));
-        const timeText = minutes < 60 ? `${minutes}分钟` : `${Math.floor(minutes / 60)}小时${minutes % 60}分钟`;
+        let timeDisplay;
+        if (minutes < 60) {
+            timeDisplay = minutes + '分钟';
+        } else {
+            timeDisplay = Math.floor(minutes / 60) + '小时' + (minutes % 60) + '分钟';
+        }
         
         modal.innerHTML = `
             <div class="modal-content" style="max-width: 520px;">
                 <div class="modal-header" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;">
                     <h3><i class="fas fa-clock"></i> 会员即将到期</h3>
-                    <span class="close-btn" onclick="closeWarningModal()">&times;</span>
+                    <span class="close-btn" onclick="handleWarningClose()">&times;</span>
                 </div>
                 <div class="modal-body">
                     <div style="text-align: center; padding: 20px 0;">
@@ -1447,7 +1512,7 @@ function showMembershipExpiryWarning(timeRemaining) {
                         </div>
                         <h4 style="color: #1f2937; margin-bottom: 12px;">您的会员即将到期</h4>
                         <p style="color: #6b7280; margin-bottom: 20px; line-height: 1.6;">
-                            您的会员将在 <strong style="color: #f59e0b;">${timeText}</strong> 后到期。<br/>
+                            您的会员将在 <strong style="color: #f59e0b;">${timeDisplay}</strong> 后到期。<br/>
                             请及时将本地数据同步到云端，<br/>
                             到期后，您的本地学习数据将被清理并强制退出登录。<br/>
                             建议您及时升级会员以保留学习进度。
@@ -1461,7 +1526,7 @@ function showMembershipExpiryWarning(timeRemaining) {
                         <div style="margin-bottom: 20px;">
                             <label style="display: flex; align-items: center; justify-content: center; gap: 8px; color: #6b7280; font-size: 14px; cursor: pointer;">
                                 <input type="checkbox" id="dont-remind-checkbox" style="margin: 0;">
-                                <span>不再提醒（勾选后将清理本地数据并退出登录）</span>
+                                <span>不再提醒</span>
                             </label>
                         </div>
                         
@@ -1480,43 +1545,45 @@ function showMembershipExpiryWarning(timeRemaining) {
         
         document.body.appendChild(modal);
         
-        // 全局函数，处理弹窗关闭
-        window.closeWarningModal = function() {
+        // 全局函数，处理弹窗关闭（与小程序的onExpiryWarningClose保持一致）
+        window.handleWarningClose = function() {
             const dontRemind = document.getElementById('dont-remind-checkbox').checked;
             modal.remove();
-            delete window.closeWarningModal;
             delete window.handleWarningClose;
             delete window.handleWarningUpgrade;
             
             if (dontRemind) {
+                // 勾选了不再提醒，保存本地设置（带时间戳，有效期24小时）
+                localStorage.setItem('membership_expiry_no_remind', JSON.stringify({
+                    enabled: true,
+                    timestamp: Date.now()
+                }));
+            
                 resolve({ action: 'no_remind' });
             } else {
                 resolve({ action: 'close' });
             }
         };
         
-        window.handleWarningClose = function() {
-            closeWarningModal();
-        };
-        
         window.handleWarningUpgrade = function() {
             modal.remove();
-            delete window.closeWarningModal;
             delete window.handleWarningClose;
             delete window.handleWarningUpgrade;
+            // 显示会员升级窗口（与小程序的onExpiryWarningUpgrade保持一致）
+            forceShowMembershipModal();
             resolve({ action: 'upgrade' });
         };
         
         // 点击外部关闭
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
-                closeWarningModal();
+                handleWarningClose();
             }
         });
     });
 }
 
-// 显示会员过期确认弹窗（立即显示，用户确认后处理）
+// 显示会员过期确认弹窗（与小程序的showExpiredConfirmModal保持一致）
 function showMembershipExpiredConfirmModal() {
     return new Promise((resolve) => {
         const modal = document.createElement('div');
@@ -1547,9 +1614,6 @@ function showMembershipExpiredConfirmModal() {
                             <button class="secondary-btn" onclick="handleExpiredLater()">
                                 <i class="fas fa-clock"></i> 稍后处理
                             </button>
-                            <button class="primary-btn" onclick="handleExpiredConfirm()">
-                                <i class="fas fa-check"></i> 确认并清理
-                            </button>
                             <button class="membership-btn" onclick="handleExpiredUpgrade()">
                                 <i class="fas fa-crown"></i> 升级会员
                             </button>
@@ -1561,33 +1625,114 @@ function showMembershipExpiredConfirmModal() {
         
         document.body.appendChild(modal);
         
-        // 全局函数，处理弹窗操作
-        window.handleExpiredConfirm = function() {
-            modal.remove();
-            delete window.handleExpiredConfirm;
-            delete window.handleExpiredLater;
-            delete window.handleExpiredUpgrade;
-            resolve({ action: 'confirm' });
-        };
-        
+        // 全局函数，处理弹窗操作（与小程序的onExpiredLater和onExpiredUpgrade保持一致）
         window.handleExpiredLater = function() {
             modal.remove();
-            delete window.handleExpiredConfirm;
             delete window.handleExpiredLater;
             delete window.handleExpiredUpgrade;
-            resolve({ action: 'later' });
+            // 调用稍后处理逻辑
+            onExpiredLater().then(() => {
+                resolve({ action: 'later' });
+            });
         };
         
         window.handleExpiredUpgrade = function() {
             modal.remove();
-            delete window.handleExpiredConfirm;
             delete window.handleExpiredLater;
             delete window.handleExpiredUpgrade;
-            // 显示会员升级窗口
-            forceShowMembershipModal();
-            resolve({ action: 'upgrade' });
+            // 调用升级会员逻辑
+            onExpiredUpgrade().then(() => {
+                resolve({ action: 'upgrade' });
+            });
         };
     });
+}
+
+// 稍后处理 - 更新服务器和本地会员状态（不删除examUser，与小程序的onExpiredLater保持一致）
+async function onExpiredLater() {
+    try {
+        if (!currentUser || !currentUser.objectId) {
+            console.error('用户信息不完整，无法更新会员状态');
+            return;
+        }
+
+        // 显示加载状态
+        showMessage('处理中...', 'info');
+
+        // 更新服务器，把会员改成非会员（与小程序的逻辑保持一致）
+        try {
+            const updateResult = await window.leanCloudClient.handleMembershipExpiry(currentUser.objectId);
+            if (!updateResult.success) {
+                throw new Error(updateResult.message || '云端会员状态更新失败');
+            }
+       
+        } catch (error) {
+            console.error('更新服务器会员状态失败:', error);
+            showMessage('服务器状态更新失败，请稍后重试', 'error');
+            return;
+        }
+
+        // 更新本地用户信息（不删除，与小程序的逻辑保持一致）
+        currentUser.membershipType = '非会员';
+        currentUser.membershipStartTime = null;
+        currentUser.membershipEndTime = null;
+        
+        // 更新本地存储
+        localStorage.setItem('examUser', JSON.stringify(currentUser));
+        
+        // 刷新页面状态
+        updateUserInterface();
+        showMessage('会员状态已更新', 'success');
+        
+    } catch (error) {
+        console.error('处理会员稍后逻辑失败:', error);
+        showMessage('处理失败，请重新登录', 'error');
+    }
+}
+
+// 过期弹窗升级会员 - 先更新服务器为非会员，然后跳转到用户页面（与小程序的onExpiredUpgrade保持一致）
+async function onExpiredUpgrade() {
+    try {
+        if (!currentUser || !currentUser.objectId) {
+            console.error('用户信息不完整，无法更新会员状态');
+            return;
+        }
+
+        // 显示加载状态
+        showMessage('处理中...', 'info');
+
+        // 只更新服务器，把会员改成非会员（与小程序的逻辑保持一致）
+        try {
+            const updateResult = await window.leanCloudClient.handleMembershipExpiry(currentUser.objectId);
+            if (!updateResult.success) {
+                throw new Error(updateResult.message || '云端会员状态更新失败');
+            }
+ 
+        } catch (error) {
+            console.error('更新服务器会员状态失败:', error);
+            showMessage('服务器状态更新失败，请稍后重试', 'error');
+            return;
+        }
+
+        // 更新本地用户信息（但不删除，与小程序的逻辑保持一致）
+        currentUser.membershipType = '非会员';
+        currentUser.membershipStartTime = null;
+        currentUser.membershipEndTime = null;
+        
+        // 更新本地存储
+        localStorage.setItem('examUser', JSON.stringify(currentUser));
+        
+        // 跳转到用户页面（模拟小程序的用户页面跳转）
+        // 在网页版中，我们显示会员升级窗口
+        showMessage('正在跳转到会员升级页面...', 'info');
+        setTimeout(() => {
+            forceShowMembershipModal();
+        }, 1000);
+        
+    } catch (error) {
+        console.error('处理会员升级逻辑失败:', error);
+        showMessage('处理失败，请重新登录', 'error');
+    }
 }
 
 // 显示会员过期登录提示（要求重新登录）
@@ -1923,13 +2068,21 @@ function showMembershipRequiredModal(actionName) {
     });
 }
 
-// 处理题型按钮点击
-function handleTypeButtonClick(e) {
+// 题目类型按钮点击处理
+async function handleTypeButtonClick(e) {
     const button = e.currentTarget;
     const type = button.dataset.type;
     
     if (!requireLogin('开始做题练习')) {
         return;
+    }
+    
+    // 检查会员状态并触发会话检测
+    if (currentUser && (currentUser.membershipType === 'vip' || currentUser.membershipType === 'svip' || currentUser.membershipType === 'sssvip')) {
+        const sessionCheckResult = await triggerSessionCheck(`选择${type}题型`);
+        if (!sessionCheckResult.success) {
+            return; // 会话过期时不继续执行
+        }
     }
     
     if (type) {
@@ -2418,20 +2571,39 @@ function processAnswer() {
     // 更新移动端按钮状态
     toggleMobileFavoriteButton(true);
     
-    // 处理错题本 - 在模拟考试模式下记录错题，或在练习错题本时移除答对的题目
+    // 处理错题本 - 根据小程序逻辑
     if (isExamMode) {
+        // 模拟考试模式：答错添加到持久化错题本
         if (!isCorrect) {
             addToWrongQuestions(questionType, question, userAnswer);
         } else {
             removeFromWrongQuestions(questionType, question);
         }
     } else if (isPracticingWrongQuestions || (window.isBatchPractice && !window.isPracticingFavorites)) {
-        // 在练习错题本中的题目时（包括批量练习），如果答对了就从错题本中移除
+        // 练习错题本模式：答对了从错题本移除
         if (isCorrect) {
             removeFromWrongQuestions(questionType, question);
             // 单题练习时重置标志，批量练习时不重置
             if (!window.isBatchPractice) {
                 isPracticingWrongQuestions = false;
+            }
+
+        }
+    } else {
+        // 普通练习模式：答错添加到临时错题练习本（不永久保存）
+        if (!isCorrect) {
+            addToPracticeWrong(question);
+        } else if (isSessionWrongPractice) {
+            // 练习本次错题模式：答对时从临时错题练习本移除
+            practiceWrongQuestions = practiceWrongQuestions.filter(q => q.title !== question.title);
+            practiceWrongCount = practiceWrongQuestions.length;
+            savePracticeWrongQuestions(practiceWrongQuestions, question._type || question.type || currentQuestionType);
+            
+            // 如果是最后一题，延迟后返回普通练习
+            if (currentQuestionIndex === currentQuestions.length - 1) {
+                setTimeout(() => {
+                    finishSessionWrongPractice();
+                }, 1500);
             }
         }
     }
@@ -2671,7 +2843,7 @@ function loadStoredData() {
 // 添加到错题本
 function addToWrongQuestions(type, question, userAnswer) {
     // 确保当前科目存在
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     
     // 确保科目对象存在
     if (!wrongQuestions[subjectKey]) {
@@ -2706,7 +2878,7 @@ function addToWrongQuestions(type, question, userAnswer) {
 // 从错题本移除
 function removeFromWrongQuestions(type, question) {
     // 确保当前科目存在
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     
     if (wrongQuestions[subjectKey] && wrongQuestions[subjectKey][type]) {
         wrongQuestions[subjectKey][type] = wrongQuestions[subjectKey][type].filter(q => q.title !== question.title);
@@ -2723,7 +2895,7 @@ function toggleFavorite() {
     const questionType = (isExamMode || window.isBatchPractice) ? (question._type || currentQuestionType) : currentQuestionType;
     
     // 确保当前科目存在
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     
     // 确保科目对象存在
     if (!favorites[subjectKey]) {
@@ -2770,7 +2942,7 @@ function updateFavoriteButton() {
     const questionType = (isExamMode || window.isBatchPractice) ? (question._type || currentQuestionType) : currentQuestionType;
     
     // 获取当前科目
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     
     const isFavorited = favorites[subjectKey] && 
         favorites[subjectKey][questionType] && 
@@ -3126,8 +3298,7 @@ function getSessionWrongQuestions() {
     return wrongList;
 }
 
-// 保存的原始练习状态
-let savedPracticeState = null;
+
 
 // 从题目导航开始本次错题练习
 function startSessionWrongPractice() {
@@ -3222,7 +3393,7 @@ function showFavoritesModal() {
     }
     
     // 获取当前科目的收藏题目
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     let favoriteCount = 0;
     
     if (favorites[subjectKey]) {
@@ -3249,7 +3420,7 @@ function showWrongQuestionsModal() {
     }
     
     // 获取当前科目的错题
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     let wrongCount = 0;
     
     if (wrongQuestions[subjectKey]) {
@@ -3272,7 +3443,7 @@ function showWrongQuestionsModal() {
 // 添加到错题本
 function addToWrongQuestions(type, question, userAnswer) {
     // 确保当前科目存在
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     
     // 确保科目对象存在
     if (!wrongQuestions[subjectKey]) {
@@ -3307,7 +3478,7 @@ function addToWrongQuestions(type, question, userAnswer) {
 // 从错题本移除
 function removeFromWrongQuestions(type, question) {
     // 确保当前科目存在
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     
     if (wrongQuestions[subjectKey] && wrongQuestions[subjectKey][type]) {
         wrongQuestions[subjectKey][type] = wrongQuestions[subjectKey][type].filter(q => q.title !== question.title);
@@ -3363,7 +3534,7 @@ function saveProgress() {
         };
         
         // 根据当前科目保存进度数据
-        const subjectKey = currentSubject || 'default';
+        const subjectKey = (currentSubject && currentSubject.name) || 'default';
         localStorage.setItem(`exam_progress_${subjectKey}_${currentQuestionType}`, JSON.stringify(progress));
         
     }
@@ -3373,7 +3544,7 @@ function saveProgress() {
 function loadProgress(type) {
     try {
         // 根据当前科目加载进度数据
-        const subjectKey = currentSubject || 'default';
+        const subjectKey = (currentSubject && currentSubject.name) || 'default';
         const progressData = localStorage.getItem(`exam_progress_${subjectKey}_${type}`);
         if (progressData) {
             const progress = JSON.parse(progressData);
@@ -4033,7 +4204,7 @@ function startConfiguredExam() {
         return;
     }
     
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     
     // 在开始抽题前，检查是否需要清理历史记录（整体检查）
     checkAndClearHistoryIfNeeded(subjectKey, singleCount, multipleCount, judgeCount, fillCount);
@@ -4203,7 +4374,7 @@ function renderWrongQuestions(filterType = '') {
     let hasQuestions = false;
     
     // 获取当前科目
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     
     // 确保当前科目的错题本存在
     if (!wrongQuestions[subjectKey]) {
@@ -4262,7 +4433,7 @@ function confirmClearWrongQuestions() {
     hideClearWrongQuestionsModal();
     
     // 获取当前科目
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     
     // 清空当前科目的错题本
     wrongQuestions[subjectKey] = {
@@ -4290,7 +4461,7 @@ function hideClearWrongQuestionsModal() {
 // 练习错题
 function practiceWrongQuestion(type, index) {
     // 获取当前科目
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     
     if (!wrongQuestions[subjectKey] || !wrongQuestions[subjectKey][type] || !wrongQuestions[subjectKey][type][index]) return;
     
@@ -4326,7 +4497,7 @@ function practiceWrongQuestion(type, index) {
 // 移除错题
 function removeWrongQuestion(type, index) {
     // 获取当前科目
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     
     if (!wrongQuestions[subjectKey] || !wrongQuestions[subjectKey][type] || !wrongQuestions[subjectKey][type][index]) return;
     
@@ -4378,7 +4549,7 @@ function renderFavorites(filterType = '') {
     let hasQuestions = false;
     
     // 获取当前科目
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     
     // 确保当前科目的收藏存在
     if (!favorites[subjectKey]) {
@@ -4443,7 +4614,7 @@ function confirmClearFavorites() {
     hideClearFavoritesModal();
     
     // 获取当前科目
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     
     // 清空当前科目的收藏
     favorites[subjectKey] = {
@@ -4472,7 +4643,7 @@ function hideClearFavoritesModal() {
 // 练习收藏题目
 function practiceFavoriteQuestion(type, index) {
     // 获取当前科目
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     
     // 确保当前科目的收藏存在
     if (!favorites[subjectKey]) {
@@ -4516,7 +4687,7 @@ function practiceFavoriteQuestion(type, index) {
 // 移除收藏题目
 function removeFavoriteQuestion(type, index) {
     // 获取当前科目
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     
     // 确保当前科目的收藏存在
     if (!favorites[subjectKey]) {
@@ -4545,7 +4716,7 @@ function removeFavoriteQuestion(type, index) {
 
 // 获取错题本中的所有题目（可按题型筛选）
 function getWrongQuestionsForPractice(filterType = '') {
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     
     if (!wrongQuestions[subjectKey]) {
         return [];
@@ -4572,7 +4743,7 @@ function getWrongQuestionsForPractice(filterType = '') {
 
 // 获取收藏本中的所有题目（可按题型筛选）
 function getFavoritesForPractice(filterType = '') {
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     
     if (!favorites[subjectKey]) {
         return [];
@@ -4694,7 +4865,7 @@ function shuffleArray(array) {
 
 // 更新错题本批量练习按钮的题目数量显示
 function updateWrongQuestionsCount() {
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     let totalCount = 0;
     
     if (wrongQuestions[subjectKey]) {
@@ -4725,7 +4896,7 @@ function updateWrongQuestionsCount() {
 
 // 更新收藏本批量练习按钮的题目数量显示
 function updateFavoritesCount() {
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     let totalCount = 0;
     
     if (favorites[subjectKey]) {
@@ -4801,7 +4972,7 @@ function submitExam() {
     // 计算考试结果
     let correctCount = 0;
     let totalCount = currentQuestions.length;
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     
     // 保存每道题的详情
     const questionsDetail = [];
@@ -5041,7 +5212,7 @@ let sessionCheckTimer = null; // 会话检查定时器
 let sessionCheckInProgress = false; // 会话检查进行中标志
 const SESSION_CHECK_INTERVAL = 5 * 60 * 1000; // 5分钟检查间隔
 
-// 独立的时间不足检查函数（每10分钟执行一次）
+// 独立的时间不足检查函数（每10分钟执行一次，与小程序逻辑保持一致）
 async function checkMembershipTimeWarning() {
     // 如果用户未登录或不是有时限的会员，无需检查
     if (!currentUser || 
@@ -5060,24 +5231,44 @@ async function checkMembershipTimeWarning() {
         return;
     }
     
-    // 检查是否时间不足一小时且用户未选择"不再提醒"
+    // 检查是否时间不足一小时且用户未选择"不再提醒"（与小程序的checkMembershipTimeWarning保持一致）
     if (timeRemaining <= oneHourInMs) {
-        const dontRemindKey = `no_remind_expiry_${currentUser.objectId}`;
-        const dontRemind = localStorage.getItem(dontRemindKey) === 'true';
+        // 检查"不再提醒"设置（与小程序的逻辑保持一致）
+        const noRemindData = localStorage.getItem('membership_expiry_no_remind');
+        let shouldShowWarning = true;
         
-        if (!dontRemind) {
-  
+        if (noRemindData) {
+            try {
+                const noRemind = JSON.parse(noRemindData);
+                // 检查24小时有效期（与小程序的逻辑保持一致）
+                if (noRemind.enabled && noRemind.timestamp) {
+                    const timeDiff = Date.now() - noRemind.timestamp;
+                    const twentyFourHours = 24 * 60 * 60 * 1000; // 24小时毫秒数
+                    
+                    // 如果在24小时内，不显示提醒
+                    if (timeDiff < twentyFourHours) {
+                        shouldShowWarning = false;
+                    } else {
+                        // 超过24小时，清除"不再提醒"设置
+                        localStorage.removeItem('membership_expiry_no_remind');
+                    }
+                }
+            } catch (error) {
+                console.error('解析"不再提醒"设置失败:', error);
+                localStorage.removeItem('membership_expiry_no_remind');
+            }
+        }
+        
+        if (shouldShowWarning) {
             try {
                 const result = await showMembershipExpiryWarning(timeRemaining);
                 
-                if (result.action === 'no_remind') {
-                    // 用户选择不再提醒，清理本地存储并退出登录
-                    localStorage.setItem(dontRemindKey, 'true');
-                    await handleMembershipExpiry(currentUser, true); // 显示最终登录提示
-                } else if (result.action === 'upgrade') {
+                // 处理结果（与小程序的逻辑保持一致）
+                if (result.action === 'upgrade') {
                     // 用户选择升级会员，显示会员窗口
                     forceShowMembershipModal();
                 }
+                // 'close' 和 'no_remind' 都只是关闭弹窗，不做其他操作
             } catch (error) {
                 console.error('会员时间不足提醒处理失败:', error);
             }
@@ -5179,264 +5370,18 @@ async function triggerSessionCheck(actionName = '操作') {
     return result;
 }
 
-// 🔄 显示云同步确认对话框
-function showCloudSyncConfirmDialog() {
-    return new Promise((resolve) => {
-        const modal = document.createElement('div');
-        modal.className = 'modal-overlay sync-confirm-overlay';
-        modal.setAttribute('data-closeable', 'false');
-        modal.innerHTML = `
-            <div class="modal-content sync-confirm-modal">
-                <div class="modal-header">
-                    <h3>☁️ 云同步提醒</h3>
-                </div>
-                <div class="modal-body">
-                    <div class="sync-message">
-                        <p>🎯 <strong>VIP用户专享</strong></p>
-                        <p>您的本地学习数据（答题记录、错题本、收藏等）尚未同步到云端。</p>
-                        <p><strong>建议在退出前进行云同步，避免数据丢失。</strong></p>
-                    </div>
-                    <div class="sync-options">
-                        <button id="sync-and-logout" class="btn btn-primary">
-                            <i class="fas fa-cloud-upload-alt"></i> 同步后退出
-                        </button>
-                        <button id="logout-without-sync" class="btn btn-secondary">
-                            <i class="fas fa-sign-out-alt"></i> 不同步直接退出
-                        </button>
-                        <button id="cancel-logout" class="btn btn-light">
-                            <i class="fas fa-times"></i> 取消
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
 
-        document.body.appendChild(modal);
 
-        // 绑定事件
-        document.getElementById('sync-and-logout').addEventListener('click', () => {
-            document.body.removeChild(modal);
-            resolve('sync');
-        });
 
-        document.getElementById('logout-without-sync').addEventListener('click', () => {
-            document.body.removeChild(modal);
-            resolve('logout');
-        });
-
-        document.getElementById('cancel-logout').addEventListener('click', () => {
-            document.body.removeChild(modal);
-            resolve('cancel');
-        });
-
-        // 点击背景关闭
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                document.body.removeChild(modal);
-                resolve('cancel');
-            }
-        });
-    });
-}
-
-// 🔄 执行云同步
-async function performCloudSync() {
-    try {
-       
-        
-        showMessage('正在同步数据到云端...', 'info');
-        
-        // 检查是否有数据需要同步
-        const hasLocalData = checkLocalDataForSync();
-        
-        if (!hasLocalData.hasData) {
-            return { success: true, message: '无需同步的数据' };
-        }
-        
-        // 获取所有数据
-        const progressData = getProgressData();
-        const wrongQuestions = getAllWrongQuestions();
-        const favorites = getAllFavorites();
-        const userStats = JSON.parse(localStorage.getItem('exam_user_stats') || '{}');
-        
-       
-        
-        // 使用新的syncDataToCloud方法（使用UserProgressAPI）
-        const syncResult = await window.leanCloudClient.syncDataToCloud({
-            progressData: progressData,
-            wrongQuestions: wrongQuestions,
-            favorites: favorites,
-            userStats: userStats
-        });
-        
-        if (syncResult.success) {
-            showMessage('✅ 云同步完成', 'success');
-            return { success: true, message: '同步成功' };
-        } else {
-            throw new Error(syncResult.message);
-        }
-        
-    } catch (error) {
-        console.error('云同步失败:', error);
-        showMessage('❌ 云同步失败: ' + error.message, 'error');
-        return { success: false, message: error.message };
-    }
-}
 
 // 获取本地进度数据（动态科目 - 扫描localStorage）
-function getProgressData() {
-    const progressData = {};
-    const questionTypes = ['single_choice', 'multiple_choice', 'true_false', 'fill_blank'];
-    
-    // 扫描localStorage，找出所有科目的进度数据
-    const progressPrefix = 'exam_progress_';
-    const subjects = new Set();
-    
-    // 遍历localStorage，提取所有科目名称
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith(progressPrefix)) {
-            const suffix = key.substring(progressPrefix.length);
-            
-            // 尝试匹配每个题型后缀
-            for (const type of questionTypes) {
-                if (suffix.endsWith('_' + type)) {
-                    // 提取科目名（去掉题型后缀）
-                    const subject = suffix.substring(0, suffix.length - type.length - 1);
-                    subjects.add(subject);
-                    break;
-                }
-            }
-        }
-    }
-    
-    // 如果没有找到任何科目，使用enabledSubjects作为后备
-    if (subjects.size === 0 && enabledSubjects.length > 0) {
-        enabledSubjects.forEach(s => subjects.add(s.name));
-    }
-    
-    // 为每个科目读取进度数据
-    subjects.forEach(subject => {
-        if (!progressData[subject]) {
-            progressData[subject] = {};
-        }
-        
-        questionTypes.forEach(type => {
-            const key = `exam_progress_${subject}_${type}`;
-            const progress = localStorage.getItem(key);
-            if (progress) {
-                try {
-                    progressData[subject][type] = JSON.parse(progress);
-                } catch (e) {
-                    console.warn(`解析${subject}_${type}进度数据失败:`, e);
-                    progressData[subject][type] = {
-                        currentIndex: 0,
-                        userAnswers: [],
-                        judgedAnswers: [],
-                        detailedProgress: [],
-                        timestamp: Date.now()
-                    };
-                }
-            } else {
-                progressData[subject][type] = {
-                    currentIndex: 0,
-                    userAnswers: [],
-                    judgedAnswers: [],
-                    detailedProgress: [],
-                    timestamp: Date.now()
-                };
-            }
-        });
-    });
-    
 
-    return progressData;
-}
 
-// 获取所有科目的错题本（扫描localStorage）
-function getAllWrongQuestions() {
-    const allWrongQuestions = {};
-    const wrongPrefix = 'exam_wrong_questions_';
-    
-    // 扫描localStorage
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith(wrongPrefix)) {
-            const subject = key.substring(wrongPrefix.length);
-            const data = localStorage.getItem(key);
-            if (data) {
-                try {
-                    allWrongQuestions[subject] = JSON.parse(data);
-                } catch (e) {
-                    console.warn(`解析${subject}错题数据失败:`, e);
-                    allWrongQuestions[subject] = {};
-                }
-            }
-        }
-    }
-    
 
-    return allWrongQuestions;
-}
 
-// 获取所有科目的收藏（扫描localStorage）
-function getAllFavorites() {
-    const allFavorites = {};
-    const favPrefix = 'exam_favorites_';
-    
-    // 扫描localStorage
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith(favPrefix)) {
-            const subject = key.substring(favPrefix.length);
-            const data = localStorage.getItem(key);
-            if (data) {
-                try {
-                    allFavorites[subject] = JSON.parse(data);
-                } catch (e) {
-                    console.warn(`解析${subject}收藏数据失败:`, e);
-                    allFavorites[subject] = {};
-                }
-            }
-        }
-    }
-    
 
-    return allFavorites;
-}
 
-// 检查是否有需要同步的本地数据
-function checkLocalDataForSync() {
-    const hasStats = statistics && (statistics.totalAnswered > 0 || statistics.totalCorrect > 0);
-    
-    // 使用扫描函数检查所有科目的数据
-    const allFavorites = getAllFavorites();
-    const allWrongQuestions = getAllWrongQuestions();
-    const hasFavorites = Object.keys(allFavorites).length > 0;
-    const hasWrongQuestions = Object.keys(allWrongQuestions).length > 0;
-    
-    const progressData = getProgressData();
-    const hasProgress = progressData && Object.keys(progressData).some(subject => {
-        const subjectData = progressData[subject];
-        return subjectData && Object.keys(subjectData).some(type => {
-            const typeData = subjectData[type];
-            return typeData && (
-                (typeData.userAnswers && typeData.userAnswers.length > 0) ||
-                (typeData.currentIndex && typeData.currentIndex > 0)
-            );
-        });
-    });
-    
-    return {
-        hasData: hasStats || hasFavorites || hasWrongQuestions || hasProgress,
-        details: {
-            hasStats,
-            hasFavorites,
-            hasWrongQuestions,
-            hasProgress
-        }
-    };
-}
+
 
 // 处理会话过期
 async function handleSessionExpired(message) {
@@ -5580,22 +5525,22 @@ async function initUserSystem() {
         const autoLoginResult = await window.leanCloudClient.autoLogin();
         
         if (autoLoginResult.success) {
-            console.log('自动登录成功:', autoLoginResult.user.username);
+         
             
             // 直接设置用户数据（过期检查已在leancloud-client.js的autoLogin中处理）
             currentUser = autoLoginResult.user;
-            console.log('用户状态:', currentUser.membershipType);
+           
             
             // 触发用户登录事件，通知主题管理器
             window.dispatchEvent(new Event('userLoggedIn'));
-            console.log('[事件] 已触发 userLoggedIn 事件');
+ 
             
             // 自动登录成功后也立即检查会员状态（确保本地存储一致性）
             const membershipCheck = await checkCurrentUserMembershipStatus();
             
             if (membershipCheck.needsAction) {
                 // 如果检测到过期等问题，处理已经在checkCurrentUserMembershipStatus中完成
-                console.log('自动登录后会员状态检查:', membershipCheck.message);
+            
                 return; // 不继续后续的初始化流程
             }
             
@@ -6326,30 +6271,11 @@ async function handleResetPassword(e) {
     }
 }
 
-// 处理登出前的确认（为VIP用户提供云同步选项）
+// 处理登出
 async function handleLogout() {
     try {
         // 🔧 先关闭个人中心窗口
         hideUserCenterModal();
-        
-        // 🔐 检查是否为VIP用户，如果是则提供云同步选项
-        if (currentUser && (currentUser.membershipType === 'vip' || currentUser.membershipType === 'svip' || currentUser.membershipType === 'sssvip')) {
-            const syncConfirm = await showCloudSyncConfirmDialog();
-            
-            if (syncConfirm === 'cancel') {
-                // 用户取消退出，重新打开个人中心
-                showUserCenterModal();
-                return;
-            }
-            
-            if (syncConfirm === 'sync') {
-                // 执行云同步
-                const syncResult = await performCloudSync();
-                if (!syncResult.success) {
-                    showMessage('云同步失败，但仍将退出登录', 'warning');
-                }
-            }
-        }
         
         // 执行实际的登出操作
         await performLogout();
@@ -6794,6 +6720,212 @@ async function handleCDKActivation() {
     }
 }
 
+// 同步数据到云端（支持按科目同步）
+async function syncDataToCloud() {
+    if (!currentUser) {
+        showMessage('请先登录', 'error');
+        return;
+    }
+    
+    if (!requireMembership('使用数据云同步功能')) {
+        return;
+    }
+    
+    showLoading('正在同步数据...');
+    
+    try {
+        // 初始化UserProgressAPI
+        const initResult = window.userProgressAPI.init();
+        if (!initResult.success) {
+            throw new Error(initResult.message);
+        }
+        
+        // 收集本地数据
+        const localData = window.userProgressAPI.collectLocalDataForSync();
+        
+       
+        
+        // 检查是否有数据需要同步
+        const hasLocalData = window.userProgressAPI.checkLocalDataForSync();
+        
+        // 调试输出检查结果
+      
+        
+        if (!hasLocalData.hasData) {
+         
+            showMessage('无需同步的数据', 'info');
+            return;
+        }
+        
+        // 同步数据到云端
+        const syncResult = await window.userProgressAPI.syncUserProgress(currentUser.id, localData);
+        
+        if (syncResult.success) {
+            showMessage('数据同步成功', 'success');
+        } else {
+            showMessage(syncResult.message, 'error');
+        }
+    } catch (error) {
+        console.error('同步数据失败:', error);
+        showMessage('同步数据失败: ' + error.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 从云端导入数据
+async function importDataFromCloud() {
+    if (!currentUser) {
+        showMessage('请先登录', 'error');
+        return;
+    }
+    
+    if (!requireMembership('使用数据导入功能')) {
+        return;
+    }
+    
+    showLoading('正在导入数据...');
+    
+    try {
+        // 初始化UserProgressAPI
+        const initResult = window.userProgressAPI.init();
+        if (!initResult.success) {
+            throw new Error(initResult.message);
+        }
+        
+        // 从云端导入数据
+        const importResult = await window.userProgressAPI.importUserProgress(currentUser.id);
+        
+        if (!importResult.success) {
+            throw new Error(importResult.message);
+        }
+        
+        const cloudData = importResult.data;
+        
+        // 应用导入的数据到本地存储
+        applyImportedDataToLocal(cloudData);
+        
+        // 刷新当前用户信息
+        currentUser = window.leanCloudClient.getCurrentUser().user;
+        updateUserCenterContent();
+        
+        // 刷新UI
+        updateStatisticsDisplay();
+        updateSubjectDisplay(); // 确保科目显示更新
+        
+        showMessage('数据导入成功', 'success');
+    } catch (error) {
+        console.error('导入数据失败:', error);
+        showMessage('导入数据失败: ' + error.message, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 应用导入的数据到本地存储
+function applyImportedDataToLocal(cloudData) {
+    try {
+      
+        
+        // 导入进度数据（按科目存储）
+        if (cloudData.progressData) {
+            const progressData = cloudData.progressData;
+            Object.keys(progressData).forEach(subject => {
+                Object.keys(progressData[subject]).forEach(type => {
+                    const key = `exam_progress_${subject}_${type}`;
+                    localStorage.setItem(key, JSON.stringify(progressData[subject][type]));
+                });
+            });
+        }
+        
+        // 导入错题本（按科目存储）
+        if (cloudData.wrongQuestions) {
+            const wrongQuestions = cloudData.wrongQuestions;
+            Object.keys(wrongQuestions).forEach(subject => {
+                const key = `exam_wrong_questions_${subject}`;
+                localStorage.setItem(key, JSON.stringify(wrongQuestions[subject]));
+            });
+        }
+        
+        // 导入收藏（按科目存储）
+        if (cloudData.favorites) {
+            const favorites = cloudData.favorites;
+            Object.keys(favorites).forEach(subject => {
+                const key = `exam_favorites_${subject}`;
+                localStorage.setItem(key, JSON.stringify(favorites[subject]));
+            });
+        }
+        
+        // 导入用户统计
+        if (cloudData.userStats) {
+            localStorage.setItem('exam_user_stats', JSON.stringify(cloudData.userStats));
+        }
+        
+        // 导入考试历史数据
+        if (cloudData.examHistory) {
+            Object.keys(cloudData.examHistory).forEach(subject => {
+                const key = `exam_history_${subject}`;
+                localStorage.setItem(key, JSON.stringify(cloudData.examHistory[subject]));
+            });
+        }
+        
+        // 导入考试题目历史数据
+        if (cloudData.examQuestionHistory) {
+            Object.keys(cloudData.examQuestionHistory).forEach(subject => {
+                Object.keys(cloudData.examQuestionHistory[subject]).forEach(type => {
+                    const key = `exam_question_history_${subject}_${type}`;
+                    localStorage.setItem(key, JSON.stringify(cloudData.examQuestionHistory[subject][type]));
+                });
+            });
+        }
+        
+        // 导入练习错题本数据
+        if (cloudData.practiceWrongQuestions) {
+            Object.keys(cloudData.practiceWrongQuestions).forEach(subject => {
+                Object.keys(cloudData.practiceWrongQuestions[subject]).forEach(type => {
+                    const key = `practice_wrong_${subject}_${type}`;
+                    localStorage.setItem(key, JSON.stringify(cloudData.practiceWrongQuestions[subject][type]));
+                });
+            });
+        }
+        
+        // 导入当前科目选择
+        if (cloudData.currentSubject) {
+            // 保存科目到本地存储（照抄小程序使用currentSubject键）
+            localStorage.setItem('currentSubject', JSON.stringify(cloudData.currentSubject));
+            currentSubject = cloudData.currentSubject;
+          
+            
+            // 强制更新UI显示并重新加载科目数据
+            setTimeout(async () => {
+                updateSubjectDisplay(); // 更新科目显示
+                setSelectedSubject(currentSubject); // 更新UI选中状态
+                
+                // 重新加载新科目的题目数据
+                if (currentSubject && currentSubject.name) {
+                    try {
+                        const result = await window.leanCloudClient.getCurrentSubjectQuestions(currentSubject);
+                        if (result.success) {
+                            allQuestionsData = result.data;
+                            questionsData = { ...allQuestionsData };
+                            calculateStatisticsFromData();
+                        }
+                    } catch (error) {
+                        console.error('导入数据后重新加载科目题目失败:', error);
+                    }
+                }
+                
+               
+            }, 100); // 稍微延迟确保DOM更新
+        }
+        
+   
+    } catch (error) {
+        console.error('应用导入数据失败:', error);
+        throw error;
+    }
+}
+
 // 更新用户界面
 function updateUserInterface() {
     const userDisplayName = document.getElementById('user-display-name');
@@ -6804,6 +6936,7 @@ function updateUserInterface() {
     const membershipBtn = document.getElementById('membership-btn');
     const importBtn = document.getElementById('import-data-btn');
     const syncBtn = document.getElementById('sync-data-btn');
+
     
     // 检查关键元素是否存在
     if (!userDisplayName || !userEmail || !userMembership) {
@@ -6847,6 +6980,7 @@ function updateUserInterface() {
         if (membershipBtn) membershipBtn.classList.remove('hidden');
         if (importBtn) importBtn.disabled = false;
         if (syncBtn) syncBtn.disabled = false;
+
         
         // 更新学习统计
         displayUserStatistics();
@@ -6872,6 +7006,7 @@ function updateUserInterface() {
         if (membershipBtn) membershipBtn.classList.add('hidden');
         if (importBtn) importBtn.disabled = true;
         if (syncBtn) syncBtn.disabled = true;
+
         
         // 重置统计信息
         resetUserStatistics();
@@ -6994,138 +7129,13 @@ function resetUserStatistics() {
     document.getElementById('user-wrong-count').textContent = '0';
 }
 
-// 从云端导入数据
-async function importDataFromCloud() {
-    if (!currentUser) {
-        showMessage('请先登录', 'error');
-        return;
-    }
-    
-    if (!requireMembership('使用数据导入功能')) {
-        return;
-    }
-    
-    showLoading('正在导入数据...');
-    
-    try {
-        const result = await window.leanCloudClient.importDataFromCloud();
-        
-        if (result.success) {
-            // 更新本地数据
-            const cloudData = result.data;
-            
-            // 导入进度数据（按科目存储）
-            if (cloudData.progressData) {
-                const progressData = cloudData.progressData;
-                // 为每个科目和题型保存进度数据
-                Object.keys(progressData).forEach(subject => {
-                    Object.keys(progressData[subject]).forEach(type => {
-                        localStorage.setItem(`exam_progress_${subject}_${type}`, JSON.stringify(progressData[subject][type]));
-                    });
-                });
-            }
-            
-            // 导入错题本（按科目存储）
-            if (cloudData.wrongQuestions) {
-                wrongQuestions = cloudData.wrongQuestions;
-                // 保存到本地存储（按科目存储）
-                const subjects = ['毛概', '思修', '近代史', '马原'];
-                subjects.forEach(subject => {
-                    if (wrongQuestions[subject]) {
-                        const wrongQuestionsKey = `exam_wrong_questions_${subject}`;
-                        localStorage.setItem(wrongQuestionsKey, JSON.stringify(wrongQuestions[subject]));
-                    }
-                });
-            }
-            
-            // 导入收藏（按科目存储）
-            if (cloudData.favorites) {
-                favorites = cloudData.favorites;
-                // 保存到本地存储（按科目存储）
-                const subjects = ['毛概', '思修', '近代史', '马原'];
-                subjects.forEach(subject => {
-                    if (favorites[subject]) {
-                        const favoritesKey = `exam_favorites_${subject}`;
-                        localStorage.setItem(favoritesKey, JSON.stringify(favorites[subject]));
-                    }
-                });
-            }
-            
-            // 导入用户统计
-            if (cloudData.userStats) {
-                localStorage.setItem('exam_user_stats', JSON.stringify(cloudData.userStats));
-            }
-            
 
-            
-            // 刷新当前用户信息
-            currentUser = window.leanCloudClient.getCurrentUser().user;
-            updateUserCenterContent();
-            
-            // 刷新UI
-            updateStatisticsDisplay();
-            
-            showMessage('数据导入成功', 'success');
-     
-        } else {
-            showMessage(result.message, 'error');
-        }
-    } catch (error) {
-        console.error('导入数据失败:', error);
-        showMessage('导入数据失败，请重试', 'error');
-    } finally {
-        hideLoading();
-    }
-}
 
 // 获取指定科目的进度数据
 // 注意：此函数已被合并到上面的getProgressData()函数，此处删除以避免重复定义
 // function getProgressData(subject) { ... }
 
-// 同步数据到云端（支持按科目同步）
-async function syncDataToCloud(subject) {
-    if (!currentUser) {
-        showMessage('请先登录', 'error');
-        return;
-    }
-    
-    if (!requireMembership('使用数据云同步功能')) {
-        return;
-    }
-    
-    showLoading('正在同步数据...');
-    
-    try {
-        // 使用扫描函数获取所有科目的数据（支持动态科目）
-        const syncWrongQuestions = getAllWrongQuestions();
-        const syncFavorites = getAllFavorites();
-        const progressData = getProgressData();
-        
-        const localData = {
-            progressData: progressData,
-            wrongQuestions: syncWrongQuestions,
-            favorites: syncFavorites,
-            userStats: JSON.parse(localStorage.getItem('exam_user_stats') || '{}'),
-        };
-        
-        const result = await window.leanCloudClient.syncDataToCloud(localData);
-        
-        if (result.success) {
-            // 更新当前用户信息
-            currentUser = window.leanCloudClient.getCurrentUser().user;
-            updateUserCenterContent();
-            
-            showMessage('数据同步成功', 'success');
-        } else {
-            showMessage(result.message, 'error');
-        }
-    } catch (error) {
-        console.error('同步数据失败:', error);
-        showMessage('同步数据失败，请重试', 'error');
-    } finally {
-        hideLoading();
-    }
-}
+
 
 // 更新活动和通知按钮显示状态
 function updateActivityNoticeVisibility() {
@@ -7232,15 +7242,7 @@ function resetUserRecords() {
         const appVersion = localStorage.getItem('appVersion');
    
         
-        // 显示清理前的存储内容
-
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key) {
-                console.log(`  - ${key}: ${localStorage.getItem(key)?.substring(0, 100)}...`);
-            }
-        }
-        
+      
         // 获取所有需要清理的存储项
         const keysToRemove = [];
         for (let i = 0; i < localStorage.length; i++) {
@@ -7287,14 +7289,7 @@ function resetUserRecords() {
             correctRate: 0
         };
         
-        // 显示清理后的存储内容
-  
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key) {
-                console.log(`  - ${key}: ${localStorage.getItem(key)?.substring(0, 100)}...`);
-            }
-        }
+        
         
 
         
@@ -7341,16 +7336,26 @@ async function loadSubjectCategories() {
 
 // 加载当前科目选择
 function loadCurrentSubject() {
-    const savedSubject = localStorage.getItem('exam_current_subject');
+    const savedSubject = localStorage.getItem('currentSubject');
     
     // 检查保存的科目是否在当前启用的科目列表中
     let isValidSubject = false;
+    let subjectObj = null;
+    
     if (savedSubject && enabledSubjects && enabledSubjects.length > 0) {
-        isValidSubject = enabledSubjects.some(s => s.name === savedSubject);
+        // 尝试解析JSON格式的科目
+        try {
+            subjectObj = JSON.parse(savedSubject);
+            isValidSubject = enabledSubjects.some(s => s.name === subjectObj.name);
+        } catch (e) {
+            // 如果JSON解析失败，回退到字符串比较（向后兼容）
+            isValidSubject = enabledSubjects.some(s => s.name === savedSubject);
+        }
     }
     
     if (savedSubject && isValidSubject) {
-        currentSubject = savedSubject;
+        // 使用解析后的科目对象
+        currentSubject = subjectObj || savedSubject;
         updateSubjectDisplay();
      
     } else {
@@ -7361,14 +7366,15 @@ function loadCurrentSubject() {
             currentSubject = '毛概'; // 预设默认值
         }
         updateSubjectDisplay();
-        console.log('ℹ️ 使用默认科目:', currentSubject);
+       
     }
 }
 
 // 保存当前科目选择
 function saveCurrentSubject(subject) {
     currentSubject = subject;
-    localStorage.setItem('exam_current_subject', subject);
+    // 保存完整的科目对象（JSON格式）
+    localStorage.setItem('currentSubject', JSON.stringify(subject));
     updateSubjectDisplay();
 }
 
@@ -7376,8 +7382,8 @@ function saveCurrentSubject(subject) {
 function updateSubjectDisplay() {
     const subjectText = document.getElementById('current-subject-text');
     if (subjectText && currentSubject) {
-        // 直接显示科目名称（name），而不是 displayName
-        subjectText.textContent = currentSubject;
+        // 显示科目名称（name）
+        subjectText.textContent = currentSubject.name || currentSubject;
     }
 }
 
@@ -7393,7 +7399,7 @@ function filterQuestionsBySubject() {
     questionsData = {};
     Object.keys(allQuestionsData).forEach(type => {
         questionsData[type] = allQuestionsData[type].filter(question => 
-            question.category === currentSubject
+            question.category === (currentSubject.name || currentSubject)
         );
     });
 }
@@ -7504,7 +7510,7 @@ function renderSubjectOptions() {
         enabledSubjects.forEach(subject => {
             const option = document.createElement('div');
             option.className = 'subject-option';
-            option.setAttribute('data-subject', subject.name);
+            option.setAttribute('data-subject', JSON.stringify(subject));
             
             const subjectId = getSubjectId(subject.name);
             
@@ -7513,7 +7519,7 @@ function renderSubjectOptions() {
                 <div class="subject-info">
                     <h3>${subject.name}</h3>
                     <p>${subject.displayName || subject.name}</p>
-                    <span class="subject-count" id="${subjectId}-count">-- 题</span>
+                    <span class="subject-count" id="${subjectId}-count">题目加载中</span>
                 </div>
             `;
             
@@ -7529,35 +7535,13 @@ function hideSubjectSelectorModal() {
     document.body.classList.remove('modal-open');
 }
 
-// 更新科目题目数量显示
+// 更新科目题目数量显示（简化版，不显示具体数量）
 function updateSubjectCounts() {
-    const stats = getSubjectStatistics();
-    
-    // 动态更新每个科目的题目数量
-    if (enabledSubjects && enabledSubjects.length > 0) {
-        enabledSubjects.forEach(subject => {
-            // 生成科目 ID（将中文科目名转换为 ID）
-            const subjectId = getSubjectId(subject.name);
-            const countElement = document.getElementById(`${subjectId}-count`);
-            
-            const questionCount = stats[subject.name] || 0;
-            
-            if (countElement) {
-                countElement.textContent = `${questionCount} 题`;
-            }
-        });
-    } else {
-        // 预设默认科目（向下兼容）
-        const maogaiCount = document.getElementById('maogai-count');
-        const sixiuCount = document.getElementById('sixiu-count');
-        const jindaishiCount = document.getElementById('jindaishi-count');
-        const mayuanCount = document.getElementById('mayuan-count');
-        
-        if (maogaiCount) maogaiCount.textContent = `${stats['毛概'] || 0} 题`;
-        if (sixiuCount) sixiuCount.textContent = `${stats['思修'] || 0} 题`;
-        if (jindaishiCount) jindaishiCount.textContent = `${stats['近代史'] || 0} 题`;
-        if (mayuanCount) mayuanCount.textContent = `${stats['马原'] || 0} 题`;
-    }
+    // 移除题目数量统计显示，改为统一提示
+    const allCountElements = document.querySelectorAll('.subject-count');
+    allCountElements.forEach(element => {
+        element.textContent = '题目就绪';
+    });
 }
 
 // 根据科目名生成 ID（用于 DOM 元素）
@@ -7597,11 +7581,22 @@ function setSelectedSubject(subject) {
         option.classList.remove('selected');
     });
     
-    // 设置新的选择
-    const option = document.querySelector(`[data-subject="${subject}"]`);
-    if (option) {
-        option.classList.add('selected');
-        selectedSubjectOption = option;
+    // 遍历所有选项找到匹配的科目
+    let foundOption = null;
+    document.querySelectorAll('.subject-option').forEach(option => {
+        try {
+            const optionSubject = JSON.parse(option.dataset.subject);
+            if (optionSubject.name === subject.name) {
+                foundOption = option;
+            }
+        } catch (e) {
+            // 如果解析失败，跳过
+        }
+    });
+    
+    if (foundOption) {
+        foundOption.classList.add('selected');
+        selectedSubjectOption = foundOption;
         
         // 启用确认按钮
         document.getElementById('confirm-subject-selection').disabled = false;
@@ -7626,36 +7621,57 @@ function setSelectedSubject(subject) {
 }
 
 // 确认科目选择
-function confirmSubjectSelection() {
+async function confirmSubjectSelection() {
     if (!selectedSubjectOption) return;
     
-    const newSubject = selectedSubjectOption.dataset.subject;
+    const newSubjectObj = JSON.parse(selectedSubjectOption.dataset.subject);
+    const newSubject = newSubjectObj;
     
     // 更新当前科目
-    currentSubject = newSubject;
+    currentSubject = newSubjectObj;
     
     // 只有登录用户才保存到本地存储
     if (currentUser) {
-        localStorage.setItem('exam_current_subject', newSubject);
+        localStorage.setItem('currentSubject', JSON.stringify(newSubjectObj));
     }
     
     // 更新显示
     updateSubjectDisplay();
     
-    // 重新过滤题目数据
-    filterQuestionsBySubject();
-    
-    // 重新计算统计信息
-    calculateStatisticsFromData();
-    
-    // 更新UI
-    updateUI();
+    // 加载新科目的题目数据
+    try {
+        showLoading('正在加载新科目题目...');
+        
+        // 使用新的方法加载新科目的题目
+        const result = await window.leanCloudClient.getCurrentSubjectQuestions(newSubjectObj);
+        if (!result.success) {
+            throw new Error(result.message);
+        }
+        
+        allQuestionsData = result.data;
+        questionsData = { ...allQuestionsData };
+        
+        // 重新计算统计信息
+        calculateStatisticsFromData();
+        
+        updateStatus(`已切换到 ${newSubjectObj.name} 科目`, 'success');
+        
+        // 更新UI
+        updateUI();
+        
+        hideLoading();
+        
+    } catch (error) {
+        console.error('加载新科目题目失败:', error);
+        showMessage(`加载 ${newSubjectObj.name} 科目题目失败：${error.message}`, 'error');
+        hideLoading();
+    }
     
     // 隐藏模态框
     hideSubjectSelectorModal();
     
     // 显示成功消息（使用 displayName）
-    const displayName = SUBJECT_CATEGORIES[newSubject] || newSubject;
+    const displayName = newSubject.displayName || newSubject.name || '未知科目';
     showMessage(`已切换到：${displayName}`, 'success');
 }
 
@@ -7667,11 +7683,18 @@ function checkSubjectSelection() {
     }
     
     // 检查保存的科目是否有效
-    const savedSubject = localStorage.getItem('exam_current_subject');
+    const savedSubject = localStorage.getItem('currentSubject');
     let isValidSubject = false;
     
     if (savedSubject && enabledSubjects && enabledSubjects.length > 0) {
-        isValidSubject = enabledSubjects.some(s => s.name === savedSubject);
+        // 尝试解析JSON格式的科目
+        try {
+            const subjectObj = JSON.parse(savedSubject);
+            isValidSubject = enabledSubjects.some(s => s.name === subjectObj.name);
+        } catch (e) {
+            // 如果JSON解析失败，回退到字符串比较（向后兼容）
+            isValidSubject = enabledSubjects.some(s => s.name === savedSubject);
+        }
     }
     
     // 如果没有保存的科目或科目已被禁用，必须显示科目选择模态框
@@ -7757,7 +7780,7 @@ function hideClearExamHistoryModal() {
 function confirmClearExamHistory() {
     hideClearExamHistoryModal();
     
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     const key = getExamHistoryKey(subjectKey);
     localStorage.removeItem(key);
     renderExamHistory();
@@ -7767,7 +7790,7 @@ function confirmClearExamHistory() {
 // 渲染考试记录列表
 function renderExamHistory() {
     const container = document.getElementById('exam-history-list');
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     const history = getExamHistory(subjectKey);
     
     if (history.length === 0) {
@@ -7859,7 +7882,7 @@ function formatExamTime(seconds) {
 
 // 查看考试详情
 function viewExamDetail(recordIndex) {
-    const subjectKey = currentSubject || '毛概';
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
     const history = getExamHistory(subjectKey);
     
     if (!history[recordIndex] || !history[recordIndex].questions) {
@@ -7924,4 +7947,146 @@ function viewExamDetail(recordIndex) {
     
     const dateStr = formatExamDate(record.date);
     showMessage(`正在查看 ${dateStr} 的考试记录`, 'info');
+}
+
+
+// ========== 临时错题练习本功能（仿小程序实现）==========
+
+// 加载临时错题练习本（本地存储）
+function loadPracticeWrongQuestions(type) {
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
+    const key = `practice_wrong_${subjectKey}_${type}`;
+    const storedData = localStorage.getItem(key);
+    
+    if (storedData) {
+        try {
+            return JSON.parse(storedData);
+        } catch (e) {
+            console.warn(`解析${key}临时错题数据失败:`, e);
+            return [];
+        }
+    }
+    return [];
+}
+
+// 保存临时错题练习本（本地存储）
+function savePracticeWrongQuestions(wrongList, type) {
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
+    const key = `practice_wrong_${subjectKey}_${type}`;
+    localStorage.setItem(key, JSON.stringify(wrongList));
+}
+
+// 添加到临时错题练习本（答错时调用，不重复添加）
+function addToPracticeWrong(question) {
+    const questionTypeReal = question._type || question.type || currentQuestionType;
+    
+    // 检查是否已存在（通过题目标题判断）
+    const exists = practiceWrongQuestions.some(q => q.title === question.title);
+    if (exists) return;
+    
+    practiceWrongQuestions.push({
+        ...question, 
+        _type: questionTypeReal
+    });
+    
+    practiceWrongCount = practiceWrongQuestions.length;
+    savePracticeWrongQuestions(practiceWrongQuestions, questionTypeReal);
+    
+    // 更新按钮状态
+    updatePracticeWrongButton();
+}
+
+// 清除临时错题练习本
+function clearPracticeWrongQuestions() {
+    const questionTypes = ['single_choice', 'multiple_choice', 'true_false', 'fill_blank'];
+    const subjectKey = (currentSubject && currentSubject.name) || '毛概';
+    
+    questionTypes.forEach(type => {
+        const key = `practice_wrong_${subjectKey}_${type}`;
+        localStorage.removeItem(key);
+    });
+    
+    practiceWrongQuestions = [];
+    practiceWrongCount = 0;
+}
+
+// 更新练习错题按钮状态
+function updatePracticeWrongButton() {
+    const practiceWrongBtn = document.getElementById('practice-wrong-btn');
+    if (practiceWrongBtn) {
+        practiceWrongBtn.textContent = `练习错题 (${practiceWrongCount}题)`;
+        practiceWrongBtn.style.display = practiceWrongCount > 0 ? 'block' : 'none';
+    }
+}
+
+// 练习本次错题（从临时错题练习本加载）
+function practiceSessionWrongQuestions() {
+    // 检查是否有错题可以练习
+    if (practiceWrongQuestions.length === 0) {
+        showMessage('本题型暂无错题记录', 'info');
+        return;
+    }
+    
+    // 保存当前练习状态
+    savedPracticeState = {
+        mode: mode,
+        isExamMode: isExamMode,
+        isReviewMode: isReviewMode,
+        isPracticingWrongQuestions: isPracticingWrongQuestions,
+        currentQuestionType: currentQuestionType,
+        currentSubject: currentSubject,
+        source: source
+    };
+    
+    // 设置为练习错题模式
+    isSessionWrongPractice = true;
+    isPracticingWrongQuestions = true;
+    mode = 'practice';
+    source = 'sessionWrong';
+    
+    // 加载临时错题练习本
+    const allTypesWrong = [];
+    practiceWrongQuestions.forEach(q => {
+        allTypesWrong.push(q);
+    });
+    
+    // 设置题目
+    currentQuestions = allTypesWrong;
+    userAnswers = new Array(allTypesWrong.length).fill(null);
+    judgedAnswers = new Array(allTypesWrong.length).fill(false);
+    currentQuestionIndex = 0;
+    
+    // 显示题目
+    displayCurrentQuestion();
+    updateProgressBar();
+    updateNavigationButtons();
+    
+    showMessage(`开始练习本次错题，共${allTypesWrong.length}道题`, 'success');
+}
+
+// 完成本次错题练习，返回普通练习
+function finishSessionWrongPractice() {
+    // 清除临时错题练习本
+    clearPracticeWrongQuestions();
+    
+    // 恢复之前的练习状态
+    if (savedPracticeState) {
+        mode = savedPracticeState.mode;
+        isExamMode = savedPracticeState.isExamMode;
+        isReviewMode = savedPracticeState.isReviewMode;
+        isPracticingWrongQuestions = savedPracticeState.isPracticingWrongQuestions;
+        currentQuestionType = savedPracticeState.currentQuestionType;
+        currentSubject = savedPracticeState.currentSubject;
+        source = savedPracticeState.source;
+    }
+    
+    // 重置标志
+    isSessionWrongPractice = false;
+    savedPracticeState = null;
+    
+    // 更新UI
+    updateUI();
+    updateNavigationButtons();
+    
+    showMessage('本次错题练习完成', 'success');
 }

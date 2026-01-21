@@ -31,13 +31,11 @@
                 if (script.parentNode) {
                     script.parentNode.removeChild(script);
                 }
-             
                 reject(new Error(`加载超时: ${src}`));
             }, timeout);
             
             script.onload = () => {
                 clearTimeout(timer);
-           
                 resolve(script);
             };
             
@@ -55,54 +53,48 @@
             } catch (e) {
                 clearTimeout(timer);
                 reject(new Error(`无法添加脚本: ${src}`));
-                reject(new Error(`无法添加脚本: ${src}`));
             }
         });
     }
     
     // 尝试加载 EmailJS
     async function loadEmailJS() {
-        
         // 开始新的加载过程
         emailjsLoadingPromise = performEmailJSLoad();
         return await emailjsLoadingPromise;
     }
     
     async function performEmailJSLoad() {
-        
-
-        
         for (let i = 0; i < emailjsCDNs.length; i++) {
             const cdn = emailjsCDNs[i];
             try {
-         
-                
                 await loadScript(cdn, 3000); // 3秒超时
                 
                 // 验证是否真正加载成功
                 if (typeof emailjs !== 'undefined' && emailjs.init) {
-                   
                     emailjsLoaded = true;
-            
+                    // 通知资源状态管理器
+                    if (window.resourceStatusManager) {
+                        window.resourceStatusManager.updateStatus('emailjs', 'success', 'EmailJS 从CDN加载成功');
+                    }
                     return true;
-                } else {
-
                 }
             } catch (error) {
-       
+                // CDN加载失败，继续尝试下一个
                 continue;
             }
         }
         
         // 所有CDN都失败，检查后备方案
         if (typeof emailjs !== 'undefined') {
-          
             emailjsLoaded = true;
-
+            // 通知资源状态管理器
+            if (window.resourceStatusManager) {
+                window.resourceStatusManager.updateStatus('emailjs', 'fallback', 'EmailJS 使用后备方案');
+            }
             return true;
         }
         
-
         return false;
     }
     

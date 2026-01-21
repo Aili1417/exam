@@ -17,7 +17,7 @@ class NoticeManager {
             this.bindEvents();
             
             this.isInitialized = true;
-            console.log('✅ 通知模块初始化成功');
+           
             return { success: true };
         } catch (error) {
             console.error('❌ 通知模块初始化失败:', error);
@@ -115,7 +115,7 @@ class NoticeManager {
                 timestamp: new Date().getTime()
             };
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(noRemindData));
-            console.log('✅ 已设置今日不再提醒');
+           
         }
 
         this.hideNotice();
@@ -138,7 +138,7 @@ class NoticeManager {
      */
     resetNoRemind() {
         localStorage.removeItem(this.STORAGE_KEY);
-        console.log('✅ 已重置不再提醒设置');
+    
     }
 }
 

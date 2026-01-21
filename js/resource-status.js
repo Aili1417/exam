@@ -80,6 +80,17 @@
     
     // 监听资源加载事件
     function setupResourceMonitoring() {
+        // 检查EmailJS初始状态
+        if (typeof emailjs !== 'undefined') {
+            if (window.emailjsInitialized) {
+                updateResourceStatus('emailjs', 'success', 'EmailJS 已初始化');
+            } else {
+                updateResourceStatus('emailjs', 'success', 'EmailJS 已加载');
+            }
+        } else {
+            updateResourceStatus('emailjs', 'loading', 'EmailJS 加载中...');
+        }
+        
         // 监听EmailJS状态
         const originalConsoleLog = console.log;
         const originalConsoleWarn = console.warn;
@@ -95,6 +106,12 @@
                 updateResourceStatus('emailjs', 'fallback', '使用本地后备方案');
             } else if (message.includes('EmailJS初始化成功')) {
                 updateResourceStatus('emailjs', 'success', 'EmailJS 初始化完成');
+            } else if (message.includes('EmailJS 成功从CDN加载')) {
+                updateResourceStatus('emailjs', 'success', 'EmailJS 从CDN加载成功');
+            } else if (message.includes('EmailJS 从CDN加载成功')) {
+                updateResourceStatus('emailjs', 'success', 'EmailJS 从CDN加载成功');
+            } else if (message.includes('EmailJS 静默加载成功')) {
+                updateResourceStatus('emailjs', 'success', 'EmailJS 静默加载成功');
             }
             
             // LeanCloud 相关日志
@@ -189,6 +206,8 @@
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             initStatusPanel();
+            // 设置初始状态
+            updateResourceStatus('emailjs', 'loading', 'EmailJS 加载中...');
             setupResourceMonitoring();
             showStatusPanel();
             checkParticlesStatus();
@@ -208,6 +227,8 @@
         });
     } else {
         initStatusPanel();
+        // 设置初始状态
+        updateResourceStatus('emailjs', 'loading', 'EmailJS 加载中...');
         setupResourceMonitoring();
         showStatusPanel();
         checkParticlesStatus();

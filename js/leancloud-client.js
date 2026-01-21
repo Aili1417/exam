@@ -161,6 +161,61 @@ class LeanCloudClient {
     }
 
     /**
+     * 只加载当前选中的科目的题目（减少请求）
+     * @param {Object} currentSubject - 当前选中的科目对象
+     */
+    async getCurrentSubjectQuestions(currentSubject) {
+        try {
+            if (!this.isInitialized) {
+                throw new Error('LeanCloud未初始化');
+            }
+
+            if (!currentSubject || !currentSubject.name) {
+                throw new Error('未选择科目');
+            }
+
+            // 只加载当前科目的题目
+            const result = await this.getQuestionsBySubject(currentSubject.name);
+            if (!result.success) {
+                throw new Error(result.message);
+            }
+
+            // 按题型分组
+            const questionsByType = {
+                single_choice: [],
+                multiple_choice: [],
+                true_false: [],
+                fill_blank: []
+            };
+
+            result.data.forEach(question => {
+                if (questionsByType[question.type]) {
+                    questionsByType[question.type].push(question);
+                }
+            });
+
+            return {
+                success: true,
+                data: questionsByType,
+                message: `已加载${currentSubject.name}科目的题目`
+            };
+
+        } catch (error) {
+            console.error('加载当前科目题目失败:', error);
+            return {
+                success: false,
+                message: error.message,
+                data: {
+                    single_choice: [],
+                    multiple_choice: [],
+                    true_false: [],
+                    fill_blank: []
+                }
+            };
+        }
+    }
+
+    /**
      * 获取所有启用科目的题目（用于兼容旧代码）
      */
     async getAllQuestions() {
@@ -248,6 +303,12 @@ class LeanCloudClient {
     /**
      * 生成设备指纹
      */
+
+
+    _generateSessionId() {
+        return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
     _generateDeviceFingerprint() {
         const navigator = window.navigator;
         const screen = window.screen;
@@ -262,20 +323,13 @@ class LeanCloudClient {
             cookieEnabled: navigator.cookieEnabled || false
         };
         
-        // 创建设备指纹字符串
-        const fingerprint = `${deviceInfo.userAgent}-${deviceInfo.platform}-${deviceInfo.screenWidth}x${deviceInfo.screenHeight}-${deviceInfo.timezone}`;
+        // 使用完整的userAgent作为设备指纹
+        const fingerprint = deviceInfo.userAgent;
         
         return {
             fingerprint: fingerprint,
             deviceInfo: deviceInfo
         };
-    }
-
-    /**
-     * 生成会话ID
-     */
-    _generateSessionId() {
-        return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     }
 
     /**
@@ -308,7 +362,7 @@ class LeanCloudClient {
                 return { success: true, message: '会话信息缺失，允许继续' };
             }
 
-            // 检查session ID是否匹配
+            // 检查session ID是否匹配（恢复为原来的逻辑）
             if (activeSession.sessionId !== currentSessionId) {
                 return { 
                     success: false, 
@@ -342,10 +396,10 @@ class LeanCloudClient {
             const sessionId = this._generateSessionId();
             const now = new Date().toISOString();
 
-            // 🔧 创建LeanCloud兼容的Object数据
+            // 🔧 创建LeanCloud兼容的Object数据（恢复为之前的格式）
             const activeSession = {
                 sessionId: sessionId,
-                deviceFingerprint: device.fingerprint,
+                deviceFingerprint: `${device.deviceInfo.userAgent}-${device.deviceInfo.platform}-${device.deviceInfo.screenWidth}x${device.deviceInfo.screenHeight}-${device.deviceInfo.timezone}`,
                 deviceInfo: device.deviceInfo,
                 loginTime: now,
                 lastActiveTime: now,
