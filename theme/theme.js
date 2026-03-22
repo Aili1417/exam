@@ -24,8 +24,13 @@ class ThemeManager {
         // 从本地存储加载主题偏好
         this.loadThemePreference();
         
-        // 应用保存的主题
-        this.applyTheme(this.currentTheme, false);
+        // 无权限时强制恢复默认主题并重置本地偏好
+        const hasThemePermission = this.syncThemeWithPermission(false);
+        
+        // 仅在有权限时恢复保存的主题
+        if (hasThemePermission) {
+            this.applyTheme(this.currentTheme, false);
+        }
         
         // 绑定主题切换按钮事件
         this.bindThemeToggleButton();
@@ -59,6 +64,44 @@ class ThemeManager {
         } catch (error) {
             console.error('[主题] 保存主题偏好失败:', error);
         }
+    }
+
+    /**
+     * 强制恢复默认主题，并将偏好写回本地存储
+     * @param {boolean} showMessage - 是否显示提示
+     */
+    forceDefaultTheme(showMessage = false) {
+        let savedTheme = null;
+        try {
+            savedTheme = localStorage.getItem(this.THEME_KEY);
+        } catch (error) {
+            console.error('[主题] 读取主题偏好失败:', error);
+        }
+
+        if (this.currentTheme === this.DEFAULT_THEME && savedTheme === this.DEFAULT_THEME) {
+            this.updateThemeToggleButton();
+            return;
+        }
+
+        const shouldNotify = showMessage && this.currentTheme !== this.DEFAULT_THEME;
+        this.applyTheme(this.DEFAULT_THEME, shouldNotify);
+    }
+
+    /**
+     * 根据当前权限同步主题状态
+     * 无权限时强制切回默认主题，并将 exam_theme_preference 重置为 default
+     * @param {boolean} showMessage - 是否显示提示
+     * @returns {boolean} 当前是否仍有主题权限
+     */
+    syncThemeWithPermission(showMessage = false) {
+        const hasPermission = this.checkMembershipPermission();
+        if (!hasPermission) {
+            this.forceDefaultTheme(showMessage);
+            return false;
+        }
+
+        this.updateThemeToggleButton();
+        return true;
     }
     
     /**
@@ -106,6 +149,7 @@ class ThemeManager {
     toggleTheme() {
         // 检查会员权限
         if (!this.checkMembershipPermission()) {
+            this.forceDefaultTheme(false);
             this.showMembershipRequiredMessage();
             return;
         }

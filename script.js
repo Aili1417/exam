@@ -41,6 +41,14 @@ let selectedSubjectOption = null; // 当前选中的科目选项
 let enabledSubjects = []; // 启用的科目列表（动态加载）
 let subjectsLoaded = false; // 科目是否已加载
 
+function syncThemePermissionState(showMessage = false) {
+    window.currentUser = currentUser;
+
+    if (window.themeManager && typeof window.themeManager.syncThemeWithPermission === 'function') {
+        window.themeManager.syncThemeWithPermission(showMessage);
+    }
+}
+
 // 初始化系统
 document.addEventListener('DOMContentLoaded', async function() {
     initParticles();
@@ -238,7 +246,7 @@ async function initSystem() {
             throw new Error(initResult.message);
         }
         
-        updateStatus('已连接到云端数据库', 'connected');
+        updateStatus('已连接服务器', 'connected');
         
         // 加载启用的科目列表
         await loadEnabledSubjects();
@@ -263,7 +271,7 @@ async function initSystem() {
         
     } catch (error) {
         console.error('系统初始化失败:', error);
-        updateStatus('连接失败: ' + error.message, 'error');
+        updateStatus('服务器连接异常', 'error');
         hideLoading();
         showMessage('系统初始化失败: ' + error.message, 'error');
     }
@@ -664,8 +672,12 @@ function toggleMobileFavoriteButton(show) {
             // 检查是否已经评题（与showQuestion中的逻辑保持一致）
             const isJudged = judgedAnswers[currentQuestionIndex] && (!isExamMode || isReviewMode);
             
-            // 考试模式或已评题时不显示背题按钮
-            if (isJudged || isExamMode || !show) {
+            // 背题模式下保持显示关闭按钮；其他情况下仅在未评题且非考试模式时显示
+            if (!show || isExamMode) {
+                analysisFloatBtn.style.display = 'none';
+            } else if (isAnalysisVisible) {
+                analysisFloatBtn.style.display = 'flex';
+            } else if (isJudged) {
                 analysisFloatBtn.style.display = 'none';
             } else {
                 // 未评题且非考试模式，显示背题按钮
@@ -886,8 +898,7 @@ function disableQuestionInteraction() {
         // 不设置透明度，保持正常显示
     }
     
-    // 不禁用上一题/下一题按钮，保持可用状态但通过点击事件处理
-    // 这样用户可以看到按钮，点击时会提示退出背题模式
+    // 不禁用上一题/下一题按钮，背题模式下也允许直接切题
 }
 
 // 启用题目交互（做题和评题功能）
@@ -1046,48 +1057,36 @@ function renderSubjectSelector() {
 async function loadQuestionsFromCloud() {
     try {
         showLoading('正在加载数据...');
-        
-        // 加载保存的科目选择
+
+        if (!enabledSubjects || enabledSubjects.length === 0) {
+            await loadEnabledSubjects();
+        }
+
+        const resolvedSubject = getMatchedEnabledSubject(currentSubject) || loadCurrentSubject();
+
         // 只加载当前选中的科目的题目（减少请求）
         let result;
-        if (currentSubject && currentSubject.name) {
-            // 使用新的方法，只加载当前科目的题目
-            result = await window.leanCloudClient.getCurrentSubjectQuestions(currentSubject);
+        if (resolvedSubject && resolvedSubject.name) {
+            currentSubject = resolvedSubject;
+            result = await window.leanCloudClient.getCurrentSubjectQuestions(resolvedSubject);
             if (!result.success) {
                 throw new Error(result.message);
             }
             allQuestionsData = result.data;
         } else {
-            // 如果没有选择科目，先加载科目列表，然后加载第一个科目
-            await loadEnabledSubjects();
-            if (enabledSubjects && enabledSubjects.length > 0) {
-                currentSubject = enabledSubjects[0];
-                saveCurrentSubject(currentSubject);
-                result = await window.leanCloudClient.getCurrentSubjectQuestions(currentSubject);
-                if (!result.success) {
-                    throw new Error(result.message);
-                }
-                allQuestionsData = result.data;
-            } else {
-                // 降级处理，使用空数据
-                allQuestionsData = {
-                    single_choice: [],
-                    multiple_choice: [],
-                    true_false: [],
-                    fill_blank: []
-                };
-            }
+            // 降级处理，使用空数据
+            allQuestionsData = {
+                single_choice: [],
+                multiple_choice: [],
+                true_false: [],
+                fill_blank: []
+            };
         }
-        
-     
-        
-        // 加载保存的科目选择
-        loadCurrentSubject();
         
         // 题目已经按科目加载，直接使用
         questionsData = { ...allQuestionsData };
 
-        updateStatus(`已加载 ${currentSubject?.name || '当前'} 科目题目`, 'success');
+        updateStatus('已连接服务器', 'connected');
         
         // 立即从加载的数据中计算统计信息，避免后续的重复计算和请求
         calculateStatisticsFromData();
@@ -2168,6 +2167,8 @@ function startMockExam() {
 
 // 显示题目
 function showQuestion() {
+    const shouldRestoreAnalysis = isAnalysisVisible && !isExamMode;
+
     // 滚动到顶部
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
@@ -2274,9 +2275,13 @@ function showQuestion() {
     // 检查是否已经评题（与showQuestion中的逻辑保持一致）
     const isJudged = judgedAnswers[currentQuestionIndex] && (!isExamMode || isReviewMode);
     
-    // 考试模式或已评题时不显示背题按钮
-    if (isJudged || isExamMode) {
+    // 背题模式下保持显示关闭按钮；其他情况下仅在未评题且非考试模式时显示
+    if (isExamMode) {
         // 已评题或考试模式，不显示背题按钮
+        if (analysisDesktopBtn) analysisDesktopBtn.style.display = 'none';
+    } else if (shouldRestoreAnalysis) {
+        if (analysisDesktopBtn) analysisDesktopBtn.style.display = 'inline-flex';
+    } else if (isJudged) {
         if (analysisDesktopBtn) analysisDesktopBtn.style.display = 'none';
     } else {
         // 未评题且非考试模式，显示背题按钮
@@ -2286,8 +2291,10 @@ function showQuestion() {
     // 更新移动端按钮状态
     toggleMobileFavoriteButton(true);
     
-    // 重置解析状态
-    if (isAnalysisVisible) {
+    // 背题模式下切题后继续保持解析打开
+    if (shouldRestoreAnalysis) {
+        showAnalysis(question);
+    } else if (isAnalysisVisible) {
         hideAnalysis();
     }
     
@@ -2710,12 +2717,6 @@ function updateOptionStyles(isCorrect, correctAnswer) {
 
 // 上一题
 function previousQuestion() {
-    // 检查是否在背题模式
-    if (isAnalysisVisible) {
-        showMessage('请先退出背题模式', 'warning');
-        return;
-    }
-    
     if (currentQuestionIndex > 0) {
         currentQuestionIndex--;
         showQuestion();
@@ -2724,9 +2725,8 @@ function previousQuestion() {
 
 // 下一题
 function nextQuestion() {
-    // 检查是否在背题模式
     if (isAnalysisVisible) {
-        showMessage('请先退出背题模式', 'warning');
+        goToNextQuestion();
         return;
     }
     
@@ -2981,6 +2981,10 @@ function returnToHome() {
     if (window.isSessionWrongPractice && savedPracticeState) {
         restoreOriginalPractice();
         return;
+    }
+
+    if (isAnalysisVisible) {
+        hideAnalysis();
     }
     
     document.getElementById('question-section').classList.add('hidden');
@@ -5675,7 +5679,9 @@ async function initUserSystem() {
             startMembershipStatusCheck();
             
 
-        }
+	        }
+    } finally {
+        syncThemePermissionState(false);
     }
     
     // 控制个人中心按钮显示
@@ -6945,6 +6951,7 @@ function updateUserInterface() {
             userEmail: !!userEmail,
             userMembership: !!userMembership
         });
+        syncThemePermissionState(false);
         return;
     }
     
@@ -7011,6 +7018,8 @@ function updateUserInterface() {
         // 重置统计信息
         resetUserStatistics();
     }
+
+    syncThemePermissionState(false);
 }
 
 // 更新用户中心内容
@@ -7334,47 +7343,76 @@ async function loadSubjectCategories() {
     }
 }
 
+function parseSubjectValue(subjectValue) {
+    if (!subjectValue) {
+        return null;
+    }
+
+    if (typeof subjectValue === 'object') {
+        return subjectValue;
+    }
+
+    if (typeof subjectValue === 'string') {
+        try {
+            const parsedSubject = JSON.parse(subjectValue);
+            if (parsedSubject && typeof parsedSubject === 'object') {
+                return parsedSubject;
+            }
+        } catch (e) {
+            // 兼容旧版仅保存科目名称的情况
+        }
+
+        return { name: subjectValue };
+    }
+
+    return null;
+}
+
+function getMatchedEnabledSubject(subjectValue) {
+    if (!enabledSubjects || enabledSubjects.length === 0) {
+        return null;
+    }
+
+    const parsedSubject = parseSubjectValue(subjectValue);
+    if (!parsedSubject || !parsedSubject.name) {
+        return null;
+    }
+
+    return enabledSubjects.find(subject => subject.name === parsedSubject.name) || null;
+}
+
 // 加载当前科目选择
 function loadCurrentSubject() {
     const savedSubject = localStorage.getItem('currentSubject');
-    
-    // 检查保存的科目是否在当前启用的科目列表中
-    let isValidSubject = false;
-    let subjectObj = null;
-    
-    if (savedSubject && enabledSubjects && enabledSubjects.length > 0) {
-        // 尝试解析JSON格式的科目
-        try {
-            subjectObj = JSON.parse(savedSubject);
-            isValidSubject = enabledSubjects.some(s => s.name === subjectObj.name);
-        } catch (e) {
-            // 如果JSON解析失败，回退到字符串比较（向后兼容）
-            isValidSubject = enabledSubjects.some(s => s.name === savedSubject);
-        }
-    }
-    
-    if (savedSubject && isValidSubject) {
-        // 使用解析后的科目对象
-        currentSubject = subjectObj || savedSubject;
-        updateSubjectDisplay();
-     
+
+    const matchedSubject = getMatchedEnabledSubject(savedSubject);
+
+    if (matchedSubject) {
+        currentSubject = matchedSubject;
+        localStorage.setItem('currentSubject', JSON.stringify(matchedSubject));
     } else {
         // 没有保存的科目或科目已被禁用，选择第一个启用的科目
         if (enabledSubjects && enabledSubjects.length > 0) {
-            currentSubject = enabledSubjects[0].name;
+            currentSubject = enabledSubjects[0];
         } else {
-            currentSubject = '毛概'; // 预设默认值
+            currentSubject = { name: '毛概', displayName: '毛概' };
         }
-        updateSubjectDisplay();
-       
     }
+
+    updateSubjectDisplay();
+    return currentSubject;
 }
 
 // 保存当前科目选择
 function saveCurrentSubject(subject) {
-    currentSubject = subject;
+    const matchedSubject = getMatchedEnabledSubject(subject) || parseSubjectValue(subject);
+    if (!matchedSubject || !matchedSubject.name) {
+        return;
+    }
+
+    currentSubject = matchedSubject;
     // 保存完整的科目对象（JSON格式）
-    localStorage.setItem('currentSubject', JSON.stringify(subject));
+    localStorage.setItem('currentSubject', JSON.stringify(matchedSubject));
     updateSubjectDisplay();
 }
 
@@ -7576,6 +7614,11 @@ function getSubjectId(subjectName) {
 
 // 设置选中的科目
 function setSelectedSubject(subject) {
+    const targetSubject = getMatchedEnabledSubject(subject) || parseSubjectValue(subject);
+    if (!targetSubject || !targetSubject.name) {
+        return;
+    }
+
     // 清除之前的选择
     document.querySelectorAll('.subject-option').forEach(option => {
         option.classList.remove('selected');
@@ -7586,7 +7629,7 @@ function setSelectedSubject(subject) {
     document.querySelectorAll('.subject-option').forEach(option => {
         try {
             const optionSubject = JSON.parse(option.dataset.subject);
-            if (optionSubject.name === subject.name) {
+            if (optionSubject.name === targetSubject.name) {
                 foundOption = option;
             }
         } catch (e) {
@@ -7627,16 +7670,8 @@ async function confirmSubjectSelection() {
     const newSubjectObj = JSON.parse(selectedSubjectOption.dataset.subject);
     const newSubject = newSubjectObj;
     
-    // 更新当前科目
-    currentSubject = newSubjectObj;
-    
-    // 只有登录用户才保存到本地存储
-    if (currentUser) {
-        localStorage.setItem('currentSubject', JSON.stringify(newSubjectObj));
-    }
-    
-    // 更新显示
-    updateSubjectDisplay();
+    // 更新当前科目并持久化
+    saveCurrentSubject(newSubjectObj);
     
     // 加载新科目的题目数据
     try {
@@ -7654,7 +7689,7 @@ async function confirmSubjectSelection() {
         // 重新计算统计信息
         calculateStatisticsFromData();
         
-        updateStatus(`已切换到 ${newSubjectObj.name} 科目`, 'success');
+        updateStatus('已连接服务器', 'connected');
         
         // 更新UI
         updateUI();
@@ -7684,18 +7719,7 @@ function checkSubjectSelection() {
     
     // 检查保存的科目是否有效
     const savedSubject = localStorage.getItem('currentSubject');
-    let isValidSubject = false;
-    
-    if (savedSubject && enabledSubjects && enabledSubjects.length > 0) {
-        // 尝试解析JSON格式的科目
-        try {
-            const subjectObj = JSON.parse(savedSubject);
-            isValidSubject = enabledSubjects.some(s => s.name === subjectObj.name);
-        } catch (e) {
-            // 如果JSON解析失败，回退到字符串比较（向后兼容）
-            isValidSubject = enabledSubjects.some(s => s.name === savedSubject);
-        }
-    }
+    const isValidSubject = !!getMatchedEnabledSubject(savedSubject);
     
     // 如果没有保存的科目或科目已被禁用，必须显示科目选择模态框
     if (!savedSubject || !isValidSubject) {

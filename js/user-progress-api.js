@@ -71,9 +71,9 @@ class UserProgressAPI {
                 success: true,
                 data: {
                     objectId: record.id,
-                    progressData: record.get('progressData') || {},
-                    wrongQuestions: record.get('wrongQuestions') || {},
-                    favorites: record.get('favorites') || {},
+                    progressData: this.normalizeProgressCollection(record.get('progressData') || {}),
+                    wrongQuestions: this.normalizeQuestionCollection(record.get('wrongQuestions') || {}),
+                    favorites: this.normalizeQuestionCollection(record.get('favorites') || {}),
                     userStats: record.get('userStats') || {
                         correct: 0,
                         total: 0,
@@ -81,7 +81,7 @@ class UserProgressAPI {
                     },
                     examHistory: record.get('examHistory') || {},
                     examQuestionHistory: record.get('examQuestionHistory') || {},
-                    practiceWrongQuestions: record.get('practiceWrongQuestions') || {},
+                    practiceWrongQuestions: this.normalizeQuestionCollection(record.get('practiceWrongQuestions') || {}),
                     currentSubject: record.get('currentSubject') || null,
                     lastSyncTime: record.get('lastSyncTime') || null
                 }
@@ -119,30 +119,35 @@ class UserProgressAPI {
                 }
     
                 // 获取现有数据
-                const existingProgressData = record.get('progressData') || {};
-                const existingWrongQuestions = record.get('wrongQuestions') || {};
-                const existingFavorites = record.get('favorites') || {};
+                const existingProgressData = this.normalizeProgressCollection(record.get('progressData') || {});
+                const existingWrongQuestions = this.normalizeQuestionCollection(record.get('wrongQuestions') || {});
+                const existingFavorites = this.normalizeQuestionCollection(record.get('favorites') || {});
                 const existingUserStats = record.get('userStats') || { correct: 0, total: 0, correctRate: 0 };
                 const existingExamHistory = record.get('examHistory') || {};
                 const existingExamQuestionHistory = record.get('examQuestionHistory') || {};
-                const existingPracticeWrongQuestions = record.get('practiceWrongQuestions') || {};
+                const existingPracticeWrongQuestions = this.normalizeQuestionCollection(record.get('practiceWrongQuestions') || {});
                 const existingCurrentSubject = record.get('currentSubject') || null;
+
+                const incomingProgressData = this.normalizeProgressCollection(data.progressData || {});
+                const incomingWrongQuestions = this.normalizeQuestionCollection(data.wrongQuestions || {});
+                const incomingFavorites = this.normalizeQuestionCollection(data.favorites || {});
+                const incomingPracticeWrongQuestions = this.normalizeQuestionCollection(data.practiceWrongQuestions || {});
     
                 // 合并progressData
                 if (data.progressData) {
-                    const mergedProgressData = this.mergeProgressData(existingProgressData, data.progressData);
+                    const mergedProgressData = this.mergeProgressData(existingProgressData, incomingProgressData);
                     record.set('progressData', mergedProgressData);
                 }
     
                 // 合并wrongQuestions
                 if (data.wrongQuestions) {
-                    const mergedWrongQuestions = this.mergeWrongQuestions(existingWrongQuestions, data.wrongQuestions);
+                    const mergedWrongQuestions = this.mergeWrongQuestions(existingWrongQuestions, incomingWrongQuestions);
                     record.set('wrongQuestions', mergedWrongQuestions);
                 }
     
                 // 合并favorites
                 if (data.favorites) {
-                    const mergedFavorites = this.mergeFavorites(existingFavorites, data.favorites);
+                    const mergedFavorites = this.mergeFavorites(existingFavorites, incomingFavorites);
                     record.set('favorites', mergedFavorites);
                 }
     
@@ -165,7 +170,7 @@ class UserProgressAPI {
     
                 // 合并练习错题本数据（本地数据为准）
                 if (data.practiceWrongQuestions) {
-                    const mergedPracticeWrongQuestions = this.mergePracticeWrongQuestionsWithLocalPriority(existingPracticeWrongQuestions, data.practiceWrongQuestions);
+                    const mergedPracticeWrongQuestions = this.mergePracticeWrongQuestionsWithLocalPriority(existingPracticeWrongQuestions, incomingPracticeWrongQuestions);
                     record.set('practiceWrongQuestions', mergedPracticeWrongQuestions);
                 }
     
@@ -304,39 +309,362 @@ class UserProgressAPI {
     }
 
     /**
+     * 判断是否为普通对象
+     */
+    isPlainObject(value) {
+        return Object.prototype.toString.call(value) === '[object Object]';
+    }
+
+    /**
+     * 生成题目或题目状态的唯一标识
+     */
+    getQuestionIdentity(item) {
+        if (!item || typeof item !== 'object') {
+            return null;
+        }
+
+        if (item.questionId !== undefined && item.questionId !== null && item.questionId !== '') {
+            return `questionId:${item.questionId}`;
+        }
+
+        if (item.id !== undefined && item.id !== null && item.id !== '') {
+            return `id:${item.id}`;
+        }
+
+        if (item.question && typeof item.question === 'object') {
+            if (item.question.id !== undefined && item.question.id !== null && item.question.id !== '') {
+                return `question.id:${item.question.id}`;
+            }
+
+            if (typeof item.question.title === 'string' && item.question.title.trim()) {
+                return `question.title:${item.question.title.trim()}`;
+            }
+        }
+
+        if (typeof item.title === 'string' && item.title.trim()) {
+            return `title:${item.title.trim()}`;
+        }
+
+        return null;
+    }
+
+    /**
+     * 判断答案是否为有效值
+     */
+    isMeaningfulAnswer(value) {
+        if (value === null || value === undefined) {
+            return false;
+        }
+
+        if (typeof value === 'string') {
+            return value.trim().length > 0;
+        }
+
+        if (Array.isArray(value)) {
+            return value.length > 0;
+        }
+
+        return true;
+    }
+
+    /**
+     * 规范化单条进度记录
+     */
+    normalizeProgressEntry(progress) {
+        const source = this.isPlainObject(progress) ? progress : {};
+        const normalized = {
+            ...source,
+            currentIndex: Number.isInteger(source.currentIndex) && source.currentIndex >= 0 ? source.currentIndex : 0,
+            userAnswers: Array.isArray(source.userAnswers) ? [...source.userAnswers] : [],
+            judgedAnswers: Array.isArray(source.judgedAnswers) ? [...source.judgedAnswers] : [],
+            detailedProgress: Array.isArray(source.detailedProgress) ? [...source.detailedProgress] : [],
+            timestamp: typeof source.timestamp === 'number' && Number.isFinite(source.timestamp) ? source.timestamp : 0
+        };
+
+        if (typeof source.maxAllowedIndex === 'number' && Number.isFinite(source.maxAllowedIndex)) {
+            normalized.maxAllowedIndex = source.maxAllowedIndex;
+        } else {
+            delete normalized.maxAllowedIndex;
+        }
+
+        return normalized;
+    }
+
+    /**
+     * 规范化进度集合
+     */
+    normalizeProgressCollection(data) {
+        const normalized = {};
+
+        if (!this.isPlainObject(data)) {
+            return normalized;
+        }
+
+        Object.keys(data).forEach(subject => {
+            if (!this.isPlainObject(data[subject])) {
+                return;
+            }
+
+            const subjectProgress = {};
+            Object.keys(data[subject]).forEach(type => {
+                subjectProgress[type] = this.normalizeProgressEntry(data[subject][type]);
+            });
+
+            if (Object.keys(subjectProgress).length > 0) {
+                normalized[subject] = subjectProgress;
+            }
+        });
+
+        return normalized;
+    }
+
+    /**
+     * 规范化题目列表集合，过滤空值和异常项
+     */
+    normalizeQuestionCollection(data) {
+        const normalized = {};
+
+        if (!this.isPlainObject(data)) {
+            return normalized;
+        }
+
+        Object.keys(data).forEach(subject => {
+            if (!this.isPlainObject(data[subject])) {
+                return;
+            }
+
+            const subjectQuestions = {};
+            Object.keys(data[subject]).forEach(type => {
+                const list = Array.isArray(data[subject][type]) ? data[subject][type] : [];
+                const validQuestions = list.filter(question => Boolean(this.getQuestionIdentity(question)));
+
+                if (validQuestions.length > 0) {
+                    subjectQuestions[type] = validQuestions;
+                }
+            });
+
+            if (Object.keys(subjectQuestions).length > 0) {
+                normalized[subject] = subjectQuestions;
+            }
+        });
+
+        return normalized;
+    }
+
+    /**
+     * 按索引合并数组
+     */
+    mergeIndexedArray(existingArray, incomingArray, chooser) {
+        const maxLength = Math.max(existingArray.length, incomingArray.length);
+        const merged = [];
+
+        for (let i = 0; i < maxLength; i++) {
+            merged[i] = chooser(existingArray[i], incomingArray[i], i);
+        }
+
+        return merged;
+    }
+
+    /**
+     * 按题目标识合并对象数组
+     */
+    mergeKeyedItems(existingItems, incomingItems) {
+        const merged = [];
+        const indexMap = new Map();
+
+        const append = (item, shouldReplace) => {
+            const identity = this.getQuestionIdentity(item);
+            if (!identity) {
+                return;
+            }
+
+            if (!indexMap.has(identity)) {
+                indexMap.set(identity, merged.length);
+                merged.push(item);
+                return;
+            }
+
+            if (shouldReplace) {
+                merged[indexMap.get(identity)] = item;
+            }
+        };
+
+        existingItems.forEach(item => append(item, false));
+        incomingItems.forEach(item => append(item, true));
+
+        return merged;
+    }
+
+    /**
+     * 合并答案数组，兼容按索引和按题目对象两种结构
+     */
+    mergeAnswerArrays(existingAnswers, incomingAnswers, preferIncoming) {
+        const existingArray = Array.isArray(existingAnswers) ? existingAnswers : [];
+        const incomingArray = Array.isArray(incomingAnswers) ? incomingAnswers : [];
+        const hasKeyedItems =
+            existingArray.some(item => Boolean(this.getQuestionIdentity(item))) ||
+            incomingArray.some(item => Boolean(this.getQuestionIdentity(item)));
+
+        if (hasKeyedItems) {
+            return this.mergeKeyedItems(existingArray, incomingArray);
+        }
+
+        return this.mergeIndexedArray(existingArray, incomingArray, (existingValue, incomingValue) => {
+            const existingHasValue = this.isMeaningfulAnswer(existingValue);
+            const incomingHasValue = this.isMeaningfulAnswer(incomingValue);
+
+            if (!existingHasValue && !incomingHasValue) {
+                if (incomingValue !== undefined) {
+                    return incomingValue;
+                }
+
+                if (existingValue !== undefined) {
+                    return existingValue;
+                }
+
+                return null;
+            }
+
+            if (!existingHasValue) {
+                return incomingValue;
+            }
+
+            if (!incomingHasValue) {
+                return existingValue;
+            }
+
+            return preferIncoming ? incomingValue : existingValue;
+        });
+    }
+
+    /**
+     * 合并判题状态数组
+     */
+    mergeJudgedArrays(existingJudged, incomingJudged) {
+        const existingArray = Array.isArray(existingJudged) ? existingJudged : [];
+        const incomingArray = Array.isArray(incomingJudged) ? incomingJudged : [];
+
+        return this.mergeIndexedArray(existingArray, incomingArray, (existingValue, incomingValue) => {
+            if (existingValue === undefined && incomingValue === undefined) {
+                return false;
+            }
+
+            return Boolean(existingValue) || Boolean(incomingValue);
+        });
+    }
+
+    /**
+     * 合并详细进度
+     */
+    mergeDetailedProgress(existingDetails, incomingDetails, preferIncoming) {
+        const existingArray = Array.isArray(existingDetails) ? existingDetails : [];
+        const incomingArray = Array.isArray(incomingDetails) ? incomingDetails : [];
+        const hasKeyedItems =
+            existingArray.some(item => Boolean(this.getQuestionIdentity(item))) ||
+            incomingArray.some(item => Boolean(this.getQuestionIdentity(item)));
+
+        if (hasKeyedItems) {
+            return this.mergeKeyedItems(existingArray, incomingArray);
+        }
+
+        return this.mergeIndexedArray(existingArray, incomingArray, (existingValue, incomingValue) => {
+            const existingValid = this.isPlainObject(existingValue);
+            const incomingValid = this.isPlainObject(incomingValue);
+
+            if (!existingValid && !incomingValid) {
+                return null;
+            }
+
+            if (!existingValid) {
+                return incomingValue;
+            }
+
+            if (!incomingValid) {
+                return existingValue;
+            }
+
+            const mergedQuestion = preferIncoming
+                ? { ...(existingValue.question || {}), ...(incomingValue.question || {}) }
+                : { ...(incomingValue.question || {}), ...(existingValue.question || {}) };
+
+            return {
+                ...(preferIncoming ? existingValue : incomingValue),
+                ...(preferIncoming ? incomingValue : existingValue),
+                question: mergedQuestion,
+                userAnswer: this.isMeaningfulAnswer(incomingValue.userAnswer) ? incomingValue.userAnswer : existingValue.userAnswer,
+                isJudged: Boolean(existingValue.isJudged) || Boolean(incomingValue.isJudged),
+                isCorrect: incomingValue.isCorrect !== undefined ? incomingValue.isCorrect : existingValue.isCorrect
+            };
+        });
+    }
+
+    /**
+     * 合并题目列表并去重
+     */
+    mergeQuestionLists(existingQuestions, newQuestions) {
+        const existingList = Array.isArray(existingQuestions) ? existingQuestions : [];
+        const incomingList = Array.isArray(newQuestions) ? newQuestions : [];
+        const merged = [];
+        const identities = new Set();
+
+        [...existingList, ...incomingList].forEach(question => {
+            const identity = this.getQuestionIdentity(question);
+            if (!identity || identities.has(identity)) {
+                return;
+            }
+
+            identities.add(identity);
+            merged.push(question);
+        });
+
+        return merged;
+    }
+
+    /**
      * 合并进度数据
      */
     mergeProgressData(existingData, newData) {
-        const merged = { ...existingData };
-        
-        Object.keys(newData).forEach(subject => {
+        const merged = this.normalizeProgressCollection(existingData);
+        const incomingData = this.normalizeProgressCollection(newData);
+
+        Object.keys(incomingData).forEach(subject => {
             if (!merged[subject]) {
                 merged[subject] = {};
             }
-            
-            Object.keys(newData[subject]).forEach(type => {
+
+            Object.keys(incomingData[subject]).forEach(type => {
                 if (!merged[subject][type]) {
-                    merged[subject][type] = newData[subject][type];
+                    merged[subject][type] = this.normalizeProgressEntry(incomingData[subject][type]);
                 } else {
-                    // 合并进度数据，优先使用最新的数据
-                    const existing = merged[subject][type];
-                    const incoming = newData[subject][type];
-                    
-                    merged[subject][type] = {
-                        ...existing,
-                        ...incoming,
-                        // 如果有新答案，添加到数组中
-                        userAnswers: [...(existing.userAnswers || []), ...(incoming.userAnswers || [])].filter((answer, index, self) => 
-                            self.findIndex(a => a.questionId === answer.questionId) === index
-                        ),
-                        judgedAnswers: [...(existing.judgedAnswers || []), ...(incoming.judgedAnswers || [])].filter((answer, index, self) => 
-                            self.findIndex(a => a.questionId === answer.questionId) === index
-                        )
+                    const existing = this.normalizeProgressEntry(merged[subject][type]);
+                    const incoming = this.normalizeProgressEntry(incomingData[subject][type]);
+                    const preferIncoming = incoming.timestamp >= existing.timestamp;
+                    const mergedEntry = {
+                        ...(preferIncoming ? existing : incoming),
+                        ...(preferIncoming ? incoming : existing),
+                        currentIndex: Math.max(existing.currentIndex || 0, incoming.currentIndex || 0),
+                        userAnswers: this.mergeAnswerArrays(existing.userAnswers, incoming.userAnswers, preferIncoming),
+                        judgedAnswers: this.mergeJudgedArrays(existing.judgedAnswers, incoming.judgedAnswers),
+                        detailedProgress: this.mergeDetailedProgress(existing.detailedProgress, incoming.detailedProgress, preferIncoming),
+                        timestamp: Math.max(existing.timestamp || 0, incoming.timestamp || 0)
                     };
+
+                    if (typeof existing.maxAllowedIndex === 'number' || typeof incoming.maxAllowedIndex === 'number') {
+                        mergedEntry.maxAllowedIndex = Math.max(
+                            typeof existing.maxAllowedIndex === 'number' ? existing.maxAllowedIndex : -1,
+                            typeof incoming.maxAllowedIndex === 'number' ? incoming.maxAllowedIndex : -1
+                        );
+                    }
+
+                    if (mergedEntry.maxAllowedIndex === -1) {
+                        delete mergedEntry.maxAllowedIndex;
+                    }
+
+                    merged[subject][type] = mergedEntry;
                 }
             });
         });
-        
+
         return merged;
     }
 
@@ -344,31 +672,19 @@ class UserProgressAPI {
      * 合并错题本数据
      */
     mergeWrongQuestions(existingData, newData) {
-        const merged = { ...existingData };
-        
-        Object.keys(newData).forEach(subject => {
+        const merged = this.normalizeQuestionCollection(existingData);
+        const incomingData = this.normalizeQuestionCollection(newData);
+
+        Object.keys(incomingData).forEach(subject => {
             if (!merged[subject]) {
                 merged[subject] = {};
             }
-            
-            Object.keys(newData[subject]).forEach(type => {
-                if (!merged[subject][type]) {
-                    merged[subject][type] = [];
-                }
-                
-                // 合并题目，避免重复
-                const existingQuestions = merged[subject][type];
-                const newQuestions = newData[subject][type] || [];
-                
-                newQuestions.forEach(newQuestion => {
-                    const exists = existingQuestions.some(q => q.title === newQuestion.title);
-                    if (!exists) {
-                        existingQuestions.push(newQuestion);
-                    }
-                });
+
+            Object.keys(incomingData[subject]).forEach(type => {
+                merged[subject][type] = this.mergeQuestionLists(merged[subject][type], incomingData[subject][type]);
             });
         });
-        
+
         return merged;
     }
 
@@ -376,31 +692,19 @@ class UserProgressAPI {
      * 合并收藏数据
      */
     mergeFavorites(existingData, newData) {
-        const merged = { ...existingData };
-        
-        Object.keys(newData).forEach(subject => {
+        const merged = this.normalizeQuestionCollection(existingData);
+        const incomingData = this.normalizeQuestionCollection(newData);
+
+        Object.keys(incomingData).forEach(subject => {
             if (!merged[subject]) {
                 merged[subject] = {};
             }
-            
-            Object.keys(newData[subject]).forEach(type => {
-                if (!merged[subject][type]) {
-                    merged[subject][type] = [];
-                }
-                
-                // 合并题目，避免重复
-                const existingQuestions = merged[subject][type];
-                const newQuestions = newData[subject][type] || [];
-                
-                newQuestions.forEach(newQuestion => {
-                    const exists = existingQuestions.some(q => q.title === newQuestion.title);
-                    if (!exists) {
-                        existingQuestions.push(newQuestion);
-                    }
-                });
+
+            Object.keys(incomingData[subject]).forEach(type => {
+                merged[subject][type] = this.mergeQuestionLists(merged[subject][type], incomingData[subject][type]);
             });
         });
-        
+
         return merged;
     }
 
@@ -539,12 +843,12 @@ class UserProgressAPI {
         };
         
         // 过滤掉空的科目数据
-        localData.progressData = this.filterEmptySubjects(localData.progressData);
-        localData.wrongQuestions = this.filterEmptySubjects(localData.wrongQuestions);
-        localData.favorites = this.filterEmptySubjects(localData.favorites);
+        localData.progressData = this.filterEmptySubjects(this.normalizeProgressCollection(localData.progressData));
+        localData.wrongQuestions = this.normalizeQuestionCollection(this.filterEmptySubjects(localData.wrongQuestions));
+        localData.favorites = this.normalizeQuestionCollection(this.filterEmptySubjects(localData.favorites));
         localData.examHistory = this.filterEmptySubjects(localData.examHistory);
         localData.examQuestionHistory = this.filterEmptySubjects(localData.examQuestionHistory);
-        localData.practiceWrongQuestions = this.filterEmptySubjects(localData.practiceWrongQuestions);
+        localData.practiceWrongQuestions = this.normalizeQuestionCollection(this.filterEmptySubjects(localData.practiceWrongQuestions));
         
         console.log('收集到的本地数据（过滤后）:', localData);
         
