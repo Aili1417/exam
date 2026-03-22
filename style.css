@@ -6372,3 +6372,105 @@ body.minimal-theme #total-visit-number {
     color: #ffffff !important;
     font-weight: 600 !important;
 }
+
+.noscript-notice {
+    max-width: 1200px;
+    margin: 16px auto 0;
+    padding: 12px 16px;
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+    line-height: 1.6;
+}
+
+.noscript-notice a {
+    color: #8fd3ff;
+}
+
+.site-info-section {
+    padding: 20px 0 8px;
+}
+
+.site-info-card {
+    padding: 24px;
+    border-radius: 20px;
+    background: rgba(15, 23, 42, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+    color: #ffffff;
+}
+
+.site-info-card h2 {
+    margin: 0 0 14px;
+    font-size: 24px;
+}
+
+.site-info-card p {
+    margin: 0 0 12px;
+    line-height: 1.8;
+    color: rgba(255, 255, 255, 0.88);
+}
+
+.site-info-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.site-info-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    text-decoration: none;
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.site-info-links a:hover {
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.14);
+}
+
+body.minimal-theme .noscript-notice,
+body.minimal-theme .site-info-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+body.minimal-theme .site-info-card p {
+    color: #d5d5d5;
+}
+
+body.minimal-theme .site-info-links a {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+body.minimal-theme .site-info-links a:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 768px) {
+    .site-info-card {
+        padding: 18px;
+        border-radius: 16px;
+    }
+
+    .site-info-card h2 {
+        font-size: 20px;
+    }
+
+    .site-info-links {
+        gap: 10px;
+    }
+
+    .site-info-links a {
+        width: 100%;
+        justify-content: center;
+    }
+}
