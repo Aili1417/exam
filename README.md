@@ -113,6 +113,12 @@ php -S localhost:8000
 - 确保Question表已创建且有数据
 - 建议设置适当的ACL权限
 
+### IndexNow
+- 根目录已包含 IndexNow 密钥文件：`22c515d4-090b-4bff-8698-2c2f6511f995.txt`
+- 已配置 GitHub Actions 工作流：`.github/workflows/indexnow.yml`
+- 每次推送到 `main` 后，工作流会等待站点部署完成，然后验证密钥文件并向 IndexNow 提交首页 URL
+- 如果站点部署比 GitHub Actions 更慢，可在 GitHub 的 Actions 页面手动重新运行 `Submit IndexNow URLs`
+
 ### 环境检测
 系统会自动检测运行环境：
 - localhost/127.0.0.1: 使用开发环境配置

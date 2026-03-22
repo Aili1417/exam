@@ -1,0 +1,62 @@
+name: Submit IndexNow URLs
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Wait for the latest site deployment
+        run: sleep 180
+
+      - name: Verify the IndexNow key file is reachable
+        env:
+          INDEXNOW_KEY: 22c515d4-090b-4bff-8698-2c2f6511f995
+          INDEXNOW_KEY_LOCATION: https://exam.aili.site/22c515d4-090b-4bff-8698-2c2f6511f995.txt
+        run: |
+          curl --silent --show-error --fail "${INDEXNOW_KEY_LOCATION}" > /tmp/indexnow-key.txt
+          actual_key="$(tr -d '\r\n' < /tmp/indexnow-key.txt)"
+          if [ "${actual_key}" != "${INDEXNOW_KEY}" ]; then
+            echo "The deployed IndexNow key file does not match the expected key." >&2
+            exit 1
+          fi
+
+      - name: Submit the homepage URL to IndexNow
+        env:
+          INDEXNOW_HOST: exam.aili.site
+          INDEXNOW_KEY: 22c515d4-090b-4bff-8698-2c2f6511f995
+          INDEXNOW_KEY_LOCATION: https://exam.aili.site/22c515d4-090b-4bff-8698-2c2f6511f995.txt
+        run: |
+          payload=$(cat <<EOF
+          {
+            "host": "${INDEXNOW_HOST}",
+            "key": "${INDEXNOW_KEY}",
+            "keyLocation": "${INDEXNOW_KEY_LOCATION}",
+            "urlList": [
+              "https://${INDEXNOW_HOST}/"
+            ]
+          }
+          EOF
+          )
+
+          status_code=$(curl --silent --show-error \
+            --output /tmp/indexnow-response.txt \
+            --write-out "%{http_code}" \
+            --request POST \
+            --header "Content-Type: application/json; charset=utf-8" \
+            --data "${payload}" \
+            https://api.indexnow.org/indexnow)
+
+          cat /tmp/indexnow-response.txt || true
+
+          if [ "${status_code}" != "200" ] && [ "${status_code}" != "202" ]; then
+            echo "IndexNow submission failed with status ${status_code}." >&2
+            exit 1
+          fi
+
+          echo "IndexNow accepted the submission with status ${status_code}."
