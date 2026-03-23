@@ -9,6 +9,7 @@ class VisitStats {
         this.isInitialized = false;
         this.VisitCounter = null;
         this.isUpdating = false;
+        this.TOTAL_VISIT_RECORD_ID = '69774967d606e2613f1ce12c';
         this.today = this.getTodayDate();
     }
 
@@ -90,7 +91,14 @@ class VisitStats {
 
             this.isUpdating = true;
 
-            // 查询今天是否已有访问量记录
+            // 1. 更新总访问量记录（与小程序保持一致）
+            const totalQuery = new window.AV.Query(this.VisitCounter);
+            const totalRecord = await totalQuery.get(this.TOTAL_VISIT_RECORD_ID);
+            totalRecord.increment('visitCount', 1);
+            await totalRecord.save();
+            const totalVisitCount = totalRecord.get('visitCount') || 0;
+
+            // 2. 查询今天是否已有访问量记录
             const todayQuery = new window.AV.Query(this.VisitCounter);
             const startOfToday = this.getTodayDateObject();
             const endOfToday = new Date(startOfToday);
@@ -102,46 +110,33 @@ class VisitStats {
             const todayResults = await todayQuery.find();
             
             let visitCounter;
+            let todayVisitCount = 1;
             
             if (todayResults.length > 0) {
                 // 如果今天已有记录，更新今日访问量
                 visitCounter = todayResults[0];
-                
-                // 兼容新旧数据结构
-                const currentTodayCount = visitCounter.get('todayCount') || visitCounter.get('visitCount') || 0;
-                const newTodayCount = currentTodayCount + 1;
-                
-                // 更新数据（使用todayCount字段，确保数据结构一致性）
-                visitCounter.set('todayCount', newTodayCount);
-                
-                // 如果原来使用的是visitCount字段，清除它避免混淆
-                if (visitCounter.has('visitCount') && !visitCounter.has('todayCount')) {
-                    visitCounter.unset('visitCount');
-                }
+                visitCounter.increment('todayCount', 1);
+                await visitCounter.save();
+                todayVisitCount = visitCounter.get('todayCount') || 0;
             } else {
                 // 如果今天没有记录，创建新的访问量记录
                 visitCounter = new this.VisitCounter();
                 visitCounter.set('date', this.getTodayDateObject());
                 visitCounter.set('todayCount', 1);
+                await visitCounter.save();
             }
-
-            // 保存到数据库
-            await visitCounter.save();
-
-            // 获取最新的统计数据
-            const stats = await this.getVisitStats();
-            
-            this.isUpdating = false;
             
             return { 
                 success: true, 
                 message: '访问量更新成功',
-                stats: stats
+                totalVisitCount,
+                todayVisitCount
             };
         } catch (error) {
-            this.isUpdating = false;
             console.error('访问量更新失败:', error);
             return { success: false, message: `访问量更新失败: ${error.message}` };
+        } finally {
+            this.isUpdating = false;
         }
     }
 
@@ -156,47 +151,28 @@ class VisitStats {
 
             // 获取所有访问量记录
             const query = new window.AV.Query(this.VisitCounter);
+            query.limit(1000);
             const results = await query.find();
 
             
             let totalVisitCount = 0;
             let todayVisitCount = 0;
-            
-            // 计算总访问量和今日访问量
+
+            // 与小程序保持一致：
+            // 1. 固定 objectId 的记录存总访问量 visitCount
+            // 2. 每日记录存 todayCount + date
             for (const record of results) {
+                if (record.id === this.TOTAL_VISIT_RECORD_ID) {
+                    totalVisitCount = record.get('visitCount') || 0;
+                    continue;
+                }
+
                 const recordDate = record.get('date');
-                
-                // 兼容新旧数据结构：优先使用todayCount，如果没有则使用visitCount
-                const todayCount = record.get('todayCount') || record.get('visitCount') || 0;
-                
-                // 计算总访问量
-                totalVisitCount += todayCount;
-                
-                // 检查是否是今天的记录
+
                 if (recordDate && this.isSameDate(recordDate, new Date())) {
-                    todayVisitCount = todayCount;
+                    todayVisitCount = record.get('todayCount') || 0;
                 }
             }
-
-            // 如果没有今天的记录，尝试从总的visitCount中获取（向后兼容）
-            if (todayVisitCount === 0 && results.length > 0) {
-                // 检查是否有包含今天日期的记录，如果没有则说明是第一天
-                let hasTodayRecord = false;
-                for (const record of results) {
-                    const recordDate = record.get('date');
-                    if (recordDate && this.isSameDate(recordDate, new Date())) {
-                        hasTodayRecord = true;
-                        break;
-                    }
-                }
-                
-                if (!hasTodayRecord) {
-                    // 今天是第一次访问
-                    todayVisitCount = 1;
-                }
-            }
-
-           
 
             return { 
                 success: true, 
