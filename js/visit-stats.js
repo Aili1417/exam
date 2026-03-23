@@ -10,27 +10,70 @@ class VisitStats {
         this.VisitCounter = null;
         this.isUpdating = false;
         this.TOTAL_VISIT_RECORD_ID = '69774967d606e2613f1ce12c';
-        this.today = this.getTodayDate();
+        this.VISIT_TIME_ZONE = 'Asia/Shanghai';
+        this.VISIT_TIME_OFFSET = '+08:00';
+    }
+
+    /**
+     * 获取指定时间在访问量统计时区中的日期字符串
+     */
+    formatDateInVisitTimeZone(date) {
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+            timeZone: this.VISIT_TIME_ZONE,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+        const parts = formatter.formatToParts(new Date(date));
+        const year = parts.find(part => part.type === 'year')?.value;
+        const month = parts.find(part => part.type === 'month')?.value;
+        const day = parts.find(part => part.type === 'day')?.value;
+
+        return `${year}-${month}-${day}`;
     }
 
     /**
      * 获取今天的日期字符串 (YYYY-MM-DD)
      */
     getTodayDate() {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
+        return this.formatDateInVisitTimeZone(new Date());
     }
 
     /**
-     * 获取今天的日期对象 (本地时间)
+     * 获取今天零点的日期对象（与小程序保持一致）
      */
     getTodayDateObject() {
+        return new Date(`${this.getTodayDate()}T00:00:00${this.VISIT_TIME_OFFSET}`);
+    }
+
+    /**
+     * 在结果集中查找今天的访问量记录，优先使用标准零点时间的记录
+     */
+    findTodayVisitRecord(records) {
         const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        return today;
+        const todayStartTime = this.getTodayDateObject().getTime();
+        let fallbackRecord = null;
+
+        for (const record of records) {
+            if (record.id === this.TOTAL_VISIT_RECORD_ID) {
+                continue;
+            }
+
+            const recordDate = record.get('date');
+            if (!recordDate || !this.isSameDate(recordDate, today)) {
+                continue;
+            }
+
+            if (new Date(recordDate).getTime() === todayStartTime) {
+                return record;
+            }
+
+            if (!fallbackRecord) {
+                fallbackRecord = record;
+            }
+        }
+
+        return fallbackRecord;
     }
 
     /**
@@ -94,36 +137,34 @@ class VisitStats {
             // 1. 更新总访问量记录（与小程序保持一致）
             const totalQuery = new window.AV.Query(this.VisitCounter);
             const totalRecord = await totalQuery.get(this.TOTAL_VISIT_RECORD_ID);
-            totalRecord.increment('visitCount', 1);
-            await totalRecord.save();
-            const totalVisitCount = totalRecord.get('visitCount') || 0;
+            const currentTotal = totalRecord.get('visitCount') || 0;
+            const totalVisitCount = currentTotal + 1;
+            const totalRecordUpdater = window.AV.Object.createWithoutData('VisitCounter', this.TOTAL_VISIT_RECORD_ID);
+            totalRecordUpdater.set('visitCount', totalVisitCount);
+            await totalRecordUpdater.save();
 
-            // 2. 查询今天是否已有访问量记录
-            const todayQuery = new window.AV.Query(this.VisitCounter);
-            const startOfToday = this.getTodayDateObject();
-            const endOfToday = new Date(startOfToday);
-            endOfToday.setDate(endOfToday.getDate() + 1);
-            
-            todayQuery.greaterThanOrEqualTo('date', startOfToday);
-            todayQuery.lessThan('date', endOfToday);
-            
-            const todayResults = await todayQuery.find();
-            
-            let visitCounter;
-            let todayVisitCount = 1;
-            
-            if (todayResults.length > 0) {
-                // 如果今天已有记录，更新今日访问量
-                visitCounter = todayResults[0];
-                visitCounter.increment('todayCount', 1);
-                await visitCounter.save();
-                todayVisitCount = visitCounter.get('todayCount') || 0;
+            // 2. 获取所有记录，按小程序相同逻辑找到今天的记录
+            const query = new window.AV.Query(this.VisitCounter);
+            query.limit(1000);
+            const results = await query.find();
+
+            const todayStart = this.getTodayDateObject();
+            const todayRecord = this.findTodayVisitRecord(results);
+            let todayVisitCount = 0;
+
+            if (todayRecord) {
+                // 今天已有记录，更新 +1，并把日期归一到小程序相同的零点时间
+                todayVisitCount = (todayRecord.get('todayCount') || 0) + 1;
+                todayRecord.set('date', todayStart);
+                todayRecord.set('todayCount', todayVisitCount);
+                await todayRecord.save();
             } else {
                 // 如果今天没有记录，创建新的访问量记录
-                visitCounter = new this.VisitCounter();
-                visitCounter.set('date', this.getTodayDateObject());
+                const visitCounter = new this.VisitCounter();
+                visitCounter.set('date', todayStart);
                 visitCounter.set('todayCount', 1);
                 await visitCounter.save();
+                todayVisitCount = 1;
             }
             
             return { 
@@ -166,12 +207,11 @@ class VisitStats {
                     totalVisitCount = record.get('visitCount') || 0;
                     continue;
                 }
+            }
 
-                const recordDate = record.get('date');
-
-                if (recordDate && this.isSameDate(recordDate, new Date())) {
-                    todayVisitCount = record.get('todayCount') || 0;
-                }
+            const todayRecord = this.findTodayVisitRecord(results);
+            if (todayRecord) {
+                todayVisitCount = todayRecord.get('todayCount') || 0;
             }
 
             return { 
@@ -189,11 +229,7 @@ class VisitStats {
      * 检查两个日期是否是同一天
      */
     isSameDate(date1, date2) {
-        const d1 = new Date(date1);
-        const d2 = new Date(date2);
-        return d1.getFullYear() === d2.getFullYear() &&
-               d1.getMonth() === d2.getMonth() &&
-               d1.getDate() === d2.getDate();
+        return this.formatDateInVisitTimeZone(date1) === this.formatDateInVisitTimeZone(date2);
     }
 
     /**
