@@ -128,6 +128,26 @@
         }, 500);
     }
 
+    // 检查邮件服务状态
+    function checkMailStatus() {
+        const mailURL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:3874/health'
+            : 'https://mail.aili.site/health';
+
+        fetch(mailURL)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'ok') {
+                    updateResourceStatus('mail', 'success', '邮件服务正常');
+                } else {
+                    updateResourceStatus('mail', 'error', '邮件服务异常');
+                }
+            })
+            .catch(() => {
+                updateResourceStatus('mail', 'error', '邮件服务连接失败');
+            });
+    }
+
     // 检查LeanCloud状态
     function checkLeanCloudStatus() {
         let checkCount = 0;
@@ -164,6 +184,7 @@
             initStatusPanel();
             setupResourceMonitoring();
             showStatusPanel();
+            checkMailStatus();
             checkParticlesStatus();
             checkLeanCloudStatus();
 
@@ -182,6 +203,7 @@
         initStatusPanel();
         setupResourceMonitoring();
         showStatusPanel();
+        checkMailStatus();
         checkParticlesStatus();
         checkLeanCloudStatus();
     }
