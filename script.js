@@ -6053,6 +6053,12 @@ async function handleRegister(e) {
         
         if (result.success) {
             showMessage('注册成功，请登录', 'success');
+            // 后台发欢迎邮件，不阻塞UI
+            fetch(`https://mail.aili.site/api/send-welcome`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            }).catch(() => {});
             showLoginForm();
             // 自动填入邮箱
             document.getElementById('login-email').value = email;
