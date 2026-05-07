@@ -12,6 +12,10 @@ class LeanCloudClient {
         this.questionCollections = {}; // 存储各科目的Question集合类
         this.enabledSubjects = []; // 启用的科目列表
         this.userProgressAPI = null; // 用户进度API
+        // 邮件服务地址（根据环境自动切换）
+        this.mailServerURL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:3874'
+            : 'http://8.137.119.143:3874';
     }
 
     /**
@@ -1281,106 +1285,19 @@ class LeanCloudClient {
                 throw new Error('该邮箱已被注册');
             }
 
-            // 生成6位验证码
-            const code = Math.random().toString().substr(2, 6);
-            
-            // 删除该邮箱之前的验证码（优化：只删除已过期的或所有旧的）
-            const VerificationCode = AV.Object.extend('VerificationCode');
-            const deleteQuery = new AV.Query(VerificationCode);
-            deleteQuery.equalTo('email', email);
-            
-            try {
-                const oldCodes = await deleteQuery.find();
-                if (oldCodes.length > 0) {
-                    await AV.Object.destroyAll(oldCodes);
-                 
-                }
-            } catch (deleteError) {
-              
-                // 删除失败不影响新验证码的创建
-            }
-            
-            // 存储新验证码（5分钟过期）
-            const vcObject = new VerificationCode();
-            vcObject.set('email', email);
-            vcObject.set('code', code);
-            vcObject.set('expiresAt', new Date(Date.now() + 5 * 60 * 1000));
-            
-
-            
-            try {
-                await vcObject.save();
-    
-            } catch (saveError) {
-                console.error('验证码保存失败:', saveError);
-                throw new Error('验证码保存失败，请重试');
-            }
-            
-            // 使用EmailJS发送邮件
-            const templateParams = {
-                to_email: email,
-                to_name: email.split('@')[0],
-                verification_code: code
-            };
-            
-    
-            
-            try {
-                // 检查 emailjs 是否可用
-                if (typeof emailjs === 'undefined') {
-                    console.warn('emailjs 未加载，验证码已生成但无法发送邮件');
-                    return { 
-                        success: true, 
-                        message: '验证码已生成，请联系管理员获取验证码或检查网络连接' 
-                    };
-                }
-                
-                // 检查是否使用的是后备方案
-                if (emailjs._isBackup) {
-                    console.warn('⚠️ 正在使用EmailJS后备方案，邮件发送功能可能受限');
-                    return { 
-                        success: true, 
-                        message: '验证码已生成，但邮件发送功能当前不可用。请联系管理员获取验证码' 
-                    };
-                }
-                
-                // 使用正确的Service ID和模板ID
-                const serviceID = 'service_af28rse'; // 正确的Service ID
-                const templateID = 'template_16tib69'; // 模板ID
-                const publicKey = '5ASESHZ6jjhq13bbF'; // 正确的Public Key
-                
-                
-                
-                const result = await emailjs.send(
-                    serviceID,
-                    templateID,
-                    templateParams,
-                    publicKey
-                );
-         
-                console.log('邮件发送成功:', result);
-                return { 
-                    success: true, 
-                    message: '验证码已发送到您的邮箱，请查收'
-                };
-            } catch (emailError) {
-                console.error('邮件发送失败:', emailError);
-                // 邮件发送失败但验证码已保存，用户仍可以使用
-                return { 
-                    success: true, 
-                    message: '验证码已生成，如果未收到邮件请检查垃圾邮件箱或重新发送。错误详情: ' + emailError.message
-                };
-            }
-            
-            return { 
-                success: true, 
-                message: '验证码已发送到您的邮箱，请查收' 
-            };
+            // 调用邮件服务生成验证码并发送
+            const response = await fetch(`${this.mailServerURL}/api/send-code`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const result = await response.json();
+            return result;
         } catch (error) {
             console.error('发送验证码失败:', error);
-            return { 
-                success: false, 
-                message: error.message || '发送验证码失败，请重试' 
+            return {
+                success: false,
+                message: error.message || '发送验证码失败，请重试'
             };
         }
     }
@@ -1409,90 +1326,19 @@ class LeanCloudClient {
                 throw new Error('该邮箱尚未注册，请先注册账号');
             }
 
-            // 生成6位验证码
-            const code = Math.random().toString().substr(2, 6);
-            
-            // 删除该邮箱之前的验证码
-            const VerificationCode = AV.Object.extend('VerificationCode');
-            const deleteQuery = new AV.Query(VerificationCode);
-            deleteQuery.equalTo('email', email);
-            
-            try {
-                const oldCodes = await deleteQuery.find();
-                if (oldCodes.length > 0) {
-                    await AV.Object.destroyAll(oldCodes);
-                }
-            } catch (deleteError) {
-                // 删除失败不影响新验证码的创建
-            }
-            
-            // 存储新验证码（5分钟过期）
-            const vcObject = new VerificationCode();
-            vcObject.set('email', email);
-            vcObject.set('code', code);
-            vcObject.set('expiresAt', new Date(Date.now() + 5 * 60 * 1000));
-            
-            try {
-                await vcObject.save();
-            } catch (saveError) {
-                console.error('验证码保存失败:', saveError);
-                throw new Error('验证码保存失败，请重试');
-            }
-            
-            // 使用EmailJS发送邮件
-            const templateParams = {
-                to_email: email,
-                to_name: email.split('@')[0],
-                verification_code: code
-            };
-            
-            try {
-                // 检查 emailjs 是否可用
-                if (typeof emailjs === 'undefined') {
-                    console.warn('emailjs 未加载，验证码已生成但无法发送邮件');
-                    return { 
-                        success: true, 
-                        message: '验证码已生成，请联系管理员获取验证码或检查网络连接' 
-                    };
-                }
-                
-                // 检查是否使用的是后备方案
-                if (emailjs._isBackup) {
-                    console.warn('⚠️ 正在使用EmailJS后备方案，邮件发送功能可能受限');
-                    return { 
-                        success: true, 
-                        message: '验证码已生成，但邮件发送功能当前不可用。请联系管理员获取验证码' 
-                    };
-                }
-                
-                const serviceID = 'service_af28rse';
-                const templateID = 'template_16tib69';
-                const publicKey = '5ASESHZ6jjhq13bbF';
-                
-                const result = await emailjs.send(
-                    serviceID,
-                    templateID,
-                    templateParams,
-                    publicKey
-                );
-                
-               
-                return { 
-                    success: true, 
-                    message: '验证码已发送到您的邮箱，请查收'
-                };
-            } catch (emailError) {
-                console.error('邮件发送失败:', emailError);
-                return { 
-                    success: true, 
-                    message: '验证码已生成，如果未收到邮件请检查垃圾邮件箱或重新发送' 
-                };
-            }
+            // 调用邮件服务生成验证码并发送
+            const response = await fetch(`${this.mailServerURL}/api/send-code`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const result = await response.json();
+            return result;
         } catch (error) {
             console.error('发送重置密码验证码失败:', error);
-            return { 
-                success: false, 
-                message: error.message || '发送验证码失败，请重试' 
+            return {
+                success: false,
+                message: error.message || '发送验证码失败，请重试'
             };
         }
     }

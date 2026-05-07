@@ -54,7 +54,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     initParticles();
     initEventListeners();
     initResetDialogListeners();
-    await initEmailJS(); // 等待EmailJS初始化完成
     initPasswordToggle(); // 初始化密码切换功能
     loadStoredData();
     
@@ -66,45 +65,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     await initSystem(); // 等待系统初始化完成
 });
-
-// 初始化EmailJS
-async function initEmailJS() {
-    try {
-        // 检查是否已经初始化过
-        if (window.emailjsInitialized) {
- 
-            return true;
-        }
-        
-        // 等待动态加载器完成EmailJS加载
-        if (window.dynamicLoader && window.dynamicLoader.loadEmailJS) {
-            const emailjsLoaded = await window.dynamicLoader.loadEmailJS();
-            if (!emailjsLoaded) {
-           
-                return false;
-            }
-        }
-        
-        // 初始化EmailJS
-        if (typeof emailjs !== 'undefined' && emailjs.init) {
-            try {
-                const publicKey = '5ASESHZ6jjhq13bbF'; // 正确的Public Key
-                
-                emailjs.init(publicKey);
-                window.emailjsInitialized = true; // 标记已初始化
-                
-                return true;
-            } catch (error) {
-                return false;
-            }
-        } else {
-            return false;
-        }
-    } catch (error) {
-
-        return false;
-    }
-}
 
 // 初始化粒子背景
 function initParticles() {
