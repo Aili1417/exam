@@ -15,7 +15,7 @@ class LeanCloudClient {
         // 邮件服务地址（根据环境自动切换）
         this.mailServerURL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
             ? 'http://localhost:3874'
-            : 'http://8.137.119.143:3874';
+            : 'https://mail.aili.site';
     }
 
     /**
