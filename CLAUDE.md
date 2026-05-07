@@ -38,10 +38,9 @@ The `js/` directory contains domain-specific modules:
 
 ### CDN resilience
 
-The app depends on CDN-hosted libraries (particles.js, EmailJS, LeanCloud SDK). The loading system has multiple fallback layers:
-- **`dynamic-loader.js`** / **`silent-loader.js`** — Priority-ordered multi-CDN loading with timeouts.
-- **`particles-fallback.js`** / **`emailjs-fallback.js`** — Mock objects used when CDN resources fail to load.
-- **`resource-status.js`** — Bottom status panel showing load state of each CDN resource.
+The app depends on CDN-hosted libraries (particles.js, LeanCloud SDK). Email is handled by a self-hosted Express mail server at `https://mail.aili.site` (nodemailer + QQ SMTP), replacing the previous EmailJS client-side solution.
+- **`particles-fallback.js`** — Mock particles when CDN fails.
+- **`resource-status.js`** — Bottom status panel showing load state of particles and LeanCloud.
 
 ### Theme system
 

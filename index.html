@@ -29,21 +29,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js" onerror="console.log('particles.js CDN加载失败，将使用后备方案')"></script>
     <script src="https://unpkg.com/leancloud-storage@4.15.2/dist/av-min.js"></script>
-    <!-- EmailJS CDN - 使用多个源确保加载成功 -->
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3.11.0/dist/email.min.js" 
-            onerror="console.log('EmailJS jsDelivr CDN加载失败，尝试其他源')">
-    </script>
-    <script src="https://unpkg.com/@emailjs/browser@3.11.0/dist/email.min.js" 
-            onerror="console.log('EmailJS unpkg CDN加载失败，尝试其他源')">
-    </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/emailjs-com/3.2.0/email.min.js" 
-            onerror="console.log('EmailJS CloudFlare CDN加载失败')">
-    </script>
-    <!-- EmailJS 静默加载，不产生控制台错误 -->
-    <!-- 后备方案，如果CDN加载失败则使用 -->
     <script src="js/particles-fallback.js"></script>
-    <script src="js/emailjs-fallback.js"></script>
-    <script src="js/silent-loader.js"></script>
     <script src="js/resource-status.js"></script>
     <!-- 访问量统计脚本 -->
     <script src="js/visit-stats.js"></script>
@@ -325,7 +311,7 @@
                 
                 <!-- 资源加载状态面板 -->
                 <div id="resource-status" class="resource-status hidden">
-                    <div class="resource-item" id="emailjs-status">
+                    <div class="resource-item" id="mail-status">
                         <i class="fas fa-envelope"></i>
                         <span>邮件服务</span>
                         <div class="status-badge loading">加载中</div>

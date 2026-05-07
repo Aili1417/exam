@@ -1260,7 +1260,7 @@ class LeanCloudClient {
     }
 
     /**
-     * 发送邮箱验证码（使用EmailJS）
+     * 发送邮箱验证码（通过邮件服务）
      */
     async sendVerificationCode(email) {
 
